@@ -30,15 +30,49 @@ struct MetalView: NSViewRepresentable {
 //            geometryType: .triangles,
 //            allocator: allocator)
         
-        let mdlMesh = MDLMesh(
-          coneWithExtent: [1, 1, 1],
-          segments: [10, 10],
-          inwardNormals: false,
-          cap: true,
-          geometryType: .triangles,
-          allocator: allocator)
+//        let mdlMesh = MDLMesh(
+//          coneWithExtent: [1, 1, 1],
+//          segments: [10, 10],
+//          inwardNormals: false,
+//          cap: true,
+//          geometryType: .triangles,
+//          allocator: allocator)
+
+        guard let assetURL = Bundle.main.url(
+          forResource: "train",
+          withExtension: "usdz") else {
+          fatalError()
+        }
+        
+        // 1
+        let vertexDescriptor = MTLVertexDescriptor()
+        // 2
+        vertexDescriptor.attributes[0].format = .float3
+        // 3
+        vertexDescriptor.attributes[0].offset = 0
+        // 4
+        vertexDescriptor.attributes[0].bufferIndex = 0
+        
+        // 1
+        vertexDescriptor.layouts[0].stride =
+          MemoryLayout<SIMD3<Float>>.stride
+        // 2
+        let meshDescriptor =
+          MTKModelIOVertexDescriptorFromMetal(vertexDescriptor)
+        // 3
+        (meshDescriptor.attributes[0] as! MDLVertexAttribute).name =
+          MDLVertexAttributePosition
 
         
+        let asset = MDLAsset(
+          url: assetURL,
+          vertexDescriptor: meshDescriptor,
+          bufferAllocator: allocator)
+        let mdlMesh =
+          asset.childObjects(of: MDLMesh.self).first as! MDLMesh
+
+
+
         
         mesh = try! MTKMesh(mesh: mdlMesh, device: device)
       
@@ -109,12 +143,16 @@ struct MetalView: NSViewRepresentable {
             guard let submesh = parent.mesh.submeshes.first else {
               fatalError()
             }
-            renderEncoder.drawIndexedPrimitives(
-              type: .triangle,
-              indexCount: submesh.indexCount,
-              indexType: submesh.indexType,
-              indexBuffer: submesh.indexBuffer.buffer,
-              indexBufferOffset: 0)
+            for submesh in parent.mesh.submeshes {
+              renderEncoder.drawIndexedPrimitives(
+                type: .triangle,
+                indexCount: submesh.indexCount,
+                indexType: submesh.indexType,
+                indexBuffer: submesh.indexBuffer.buffer,
+                indexBufferOffset: submesh.indexBuffer.offset
+              )
+            }
+
 
             renderEncoder.endEncoding()
             commandBuffer.present(drawable)

@@ -14,7 +14,10 @@ struct VertexIn {
 };
 
 vertex float4 vertex_main(const VertexIn vertex_in [[stage_in]]) {
-    return vertex_in.position;
+    float4 position = vertex_in.position;
+    position.y -= 1.0;
+    return position;
+
 }
 
 fragment float4 fragment_main() {
