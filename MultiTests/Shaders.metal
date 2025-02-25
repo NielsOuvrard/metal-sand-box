@@ -16,7 +16,7 @@ struct VertexIn {
 // vertices are indexed in the vertex buffer.
 vertex float4 vertex_main(const VertexIn vertex_in [[stage_in]]) {
     float4 position = vertex_in.position;
-    //position.y -= 1.0;
+    position.y -= 1.0;
     return position;
 
 }
