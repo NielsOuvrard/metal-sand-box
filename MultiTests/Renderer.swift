@@ -81,6 +81,7 @@ class Renderer: NSObject {
         pipelineDescriptor.vertexDescriptor = MTKMetalVertexDescriptorFromModelIO(mesh.vertexDescriptor)
         //pipelineDescriptor.vertexDescriptor = MTKMetalVertexDescriptorFromModelIO(mdlMesh.vertexDescriptor)
         do {
+            pipelineDescriptor.vertexDescriptor = MTLVertexDescriptor.defaultLayout
             pipelineState = try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
         } catch {
             fatalError(error.localizedDescription)
@@ -134,9 +135,12 @@ extension Renderer: MTKViewDelegate {
         
         renderEncoder.setRenderPipelineState(pipelineState)
         
+        //renderEncoder.setVertexBuffer(quad.indexBuffer, offset: 0, index: 1)
+        
         // quad
         renderEncoder.setVertexBuffer(quad.vertexBuffer, offset: 0, index: 0)
-        renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: quad.vertices.count)
+        //renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: quad.indices.count)
+        renderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: quad.indices.count, indexType: .uint16, indexBuffer: quad.indexBuffer, indexBufferOffset: 0)
         
         renderEncoder.setVertexBuffer(mesh.vertexBuffers[0].buffer, offset: 0, index: 0)
         renderEncoder.setTriangleFillMode(.lines)
