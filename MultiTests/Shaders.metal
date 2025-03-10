@@ -14,11 +14,23 @@ struct VertexIn {
 };
 
 // vertices are indexed in the vertex buffer.
-vertex float4 vertex_main(const VertexIn vertex_in [[stage_in]]) {
-    float4 position = vertex_in.position;
-    position.y -= 1.0;
-    return position;
+//vertex float4 vertex_main(const VertexIn vertex_in [[stage_in]]) {
+//    float4 position = vertex_in.position;
+//    position.y -= 1.0;
+//    return position;
+//}
 
+//vertex float4 vertex_main(constant packed_float3 *vertices [[buffer(0)]], uint vertexID [[vertex_id]])
+//{
+//    float4 position = float4(vertices[vertexID], 1);
+//    return position;
+//}
+
+vertex float4 vertex_main(constant packed_float3 *vertices [[buffer(0)]], constant float &timer [[buffer(11)]], uint vertexID [[vertex_id]])
+{
+    float4 position = float4(vertices[vertexID], 1);
+    position.y += timer;
+    return position;
 }
 
 fragment float4 fragment_main() {

@@ -17,6 +17,7 @@ class Renderer: NSObject {
     var mesh: MTKMesh!
     var vertexBuffer: MTLBuffer!
     var pipelineState: MTLRenderPipelineState!
+    var timer: Float = 0
 
     init(metalView: MTKView) {
         guard
@@ -30,12 +31,13 @@ class Renderer: NSObject {
         
         // create the mesh
         let allocator = MTKMeshBufferAllocator(device: device)
-        let size: Float = 0.8
+        //let size: Float = 0.8
         guard let assetURL = Bundle.main.url(
           forResource: "train",
           withExtension: "usdz") else {
           fatalError()
         }
+        
         
         
         let vertexDescriptor = MTLVertexDescriptor()
@@ -110,6 +112,11 @@ extension Renderer: MTKViewDelegate {
         else {
             return
         }
+        
+        // lazy = initialized only when it's first used
+        lazy var quad: Quad = {
+            Quad(device: Self.device, scale: 0.8)
+        }()
     
         let renderPassDescriptor = MTLRenderPassDescriptor()
         renderPassDescriptor.colorAttachments[0].texture = drawable.texture
@@ -119,21 +126,30 @@ extension Renderer: MTKViewDelegate {
         
         let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
         
+        // 1
+        timer += 0.005
+        var currentTime = sin(timer)
+        // 2
+        renderEncoder.setVertexBytes(&currentTime, length: MemoryLayout<Float>.stride, index: 11)
+        
         renderEncoder.setRenderPipelineState(pipelineState)
-        // renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
+        
+        // quad
+        renderEncoder.setVertexBuffer(quad.vertexBuffer, offset: 0, index: 0)
+        renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: quad.vertices.count)
         
         renderEncoder.setVertexBuffer(mesh.vertexBuffers[0].buffer, offset: 0, index: 0)
         renderEncoder.setTriangleFillMode(.lines)
         
-        for submesh in mesh.submeshes {
-            renderEncoder.drawIndexedPrimitives(
-                type: .triangle,
-                indexCount: submesh.indexCount,
-                indexType: submesh.indexType,
-                indexBuffer: submesh.indexBuffer.buffer,
-                indexBufferOffset: submesh.indexBuffer.offset)
-        }
-        
+//        for submesh in mesh.submeshes {
+//            renderEncoder.drawIndexedPrimitives(
+//                type: .triangle,
+//                indexCount: submesh.indexCount,
+//                indexType: submesh.indexType,
+//                indexBuffer: submesh.indexBuffer.buffer,
+//                indexBufferOffset: submesh.indexBuffer.offset)
+//        }
+//        
         renderEncoder.endEncoding()
         commandBuffer.present(drawable)
         commandBuffer.commit()
