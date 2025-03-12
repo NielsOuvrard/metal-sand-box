@@ -139,8 +139,9 @@ extension Renderer: MTKViewDelegate {
         
         // quad
         renderEncoder.setVertexBuffer(quad.vertexBuffer, offset: 0, index: 0)
+        renderEncoder.setVertexBuffer(quad.colorBuffer, offset: 0, index: 1)
         //renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: quad.indices.count)
-        renderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: quad.indices.count, indexType: .uint16, indexBuffer: quad.indexBuffer, indexBufferOffset: 0)
+        renderEncoder.drawIndexedPrimitives(type: .point, indexCount: quad.indices.count, indexType: .uint16, indexBuffer: quad.indexBuffer, indexBufferOffset: 0)
         
         renderEncoder.setVertexBuffer(mesh.vertexBuffers[0].buffer, offset: 0, index: 0)
         renderEncoder.setTriangleFillMode(.lines)
