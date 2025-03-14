@@ -7,17 +7,16 @@
 
 import MetalKit
 
-
-
 class Renderer: NSObject {
     static var device: MTLDevice!
     static var commandQueue: MTLCommandQueue!
     static var library: MTLLibrary!
 
     var mesh: MTKMesh!
-    var vertexBuffer: MTLBuffer!
+    //var vertexBuffer: MTLBuffer!
     var pipelineState: MTLRenderPipelineState!
     var timer: Float = 0
+    var total_points: UInt32 = 50
 
     init(metalView: MTKView) {
         guard
@@ -28,60 +27,24 @@ class Renderer: NSObject {
         Self.device = device
         Self.commandQueue = commandQueue
         metalView.device = device
-        
-        // create the mesh
-        let allocator = MTKMeshBufferAllocator(device: device)
-        //let size: Float = 0.8
-        guard let assetURL = Bundle.main.url(
-          forResource: "train",
-          withExtension: "usdz") else {
-          fatalError()
-        }
-        
-        
-        
-        let vertexDescriptor = MTLVertexDescriptor()
-        vertexDescriptor.attributes[0].format = .float3
-        vertexDescriptor.attributes[0].offset = 0
-        vertexDescriptor.attributes[0].bufferIndex = 0
 
-        // only use position data for now
-        vertexDescriptor.layouts[0].stride = MemoryLayout<SIMD3<Float>>.stride
-        
-        // here from MetalVertexDescriptor to ModelIO
-        // otherwise, MTKMetalVertexDescriptorFromModelIO
-        let meshDescriptor = MTKModelIOVertexDescriptorFromMetal(vertexDescriptor)
-        (meshDescriptor.attributes[0] as! MDLVertexAttribute).name = MDLVertexAttributePosition
-        let asset = MDLAsset(url: assetURL, vertexDescriptor: meshDescriptor, bufferAllocator: allocator)
-        let mdlMesh = asset.childObjects(of: MDLMesh.self).first as! MDLMesh
-        
-        do {
-            mesh = try MTKMesh(mesh: mdlMesh, device: device)
-        } catch {
-            print(error.localizedDescription)
-        }
-        vertexBuffer = mesh.vertexBuffers[0].buffer
-        
         // create the shader function library
         let library = device.makeDefaultLibrary()
         Self.library = library
         let vertexFunction = library?.makeFunction(name: "vertex_main")
         let fragmentFunction = library?.makeFunction(name: "fragment_main")
 
-        
         // create the pipeline state object
-        
+
         // Creating pipeline states is relatively time-consuming
         // which is why you do it up-front
         // but switching pipeline states during frames is fast and efficient
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.fragmentFunction = fragmentFunction
-        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm // before was metalView.colorPixelFormat
-        pipelineDescriptor.vertexDescriptor = MTKMetalVertexDescriptorFromModelIO(mesh.vertexDescriptor)
-        //pipelineDescriptor.vertexDescriptor = MTKMetalVertexDescriptorFromModelIO(mdlMesh.vertexDescriptor)
+        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+
         do {
-            pipelineDescriptor.vertexDescriptor = MTLVertexDescriptor.defaultLayout
             pipelineState = try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
         } catch {
             fatalError(error.localizedDescription)
@@ -108,8 +71,6 @@ extension Renderer: MTKViewDelegate {
         
         guard
             let commandBuffer = Self.commandQueue.makeCommandBuffer()
-            //let descriptor = view.currentRenderPassDescriptor,
-            
         else {
             return
         }
@@ -127,34 +88,14 @@ extension Renderer: MTKViewDelegate {
         
         let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
         
-        // 1
         timer += 0.005
-        var currentTime = sin(timer)
-        // 2
-        renderEncoder.setVertexBytes(&currentTime, length: MemoryLayout<Float>.stride, index: 11)
+
+        renderEncoder.setVertexBytes(&total_points, length: MemoryLayout<UInt32>.stride, index: 0)
+        renderEncoder.setVertexBytes(&timer, length: MemoryLayout<Float>.stride, index: 11)
         
         renderEncoder.setRenderPipelineState(pipelineState)
+        renderEncoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: Int(total_points), instanceCount: 1)
         
-        //renderEncoder.setVertexBuffer(quad.indexBuffer, offset: 0, index: 1)
-        
-        // quad
-        renderEncoder.setVertexBuffer(quad.vertexBuffer, offset: 0, index: 0)
-        renderEncoder.setVertexBuffer(quad.colorBuffer, offset: 0, index: 1)
-        //renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: quad.indices.count)
-        renderEncoder.drawIndexedPrimitives(type: .point, indexCount: quad.indices.count, indexType: .uint16, indexBuffer: quad.indexBuffer, indexBufferOffset: 0)
-        
-        renderEncoder.setVertexBuffer(mesh.vertexBuffers[0].buffer, offset: 0, index: 0)
-        renderEncoder.setTriangleFillMode(.lines)
-        
-//        for submesh in mesh.submeshes {
-//            renderEncoder.drawIndexedPrimitives(
-//                type: .triangle,
-//                indexCount: submesh.indexCount,
-//                indexType: submesh.indexType,
-//                indexBuffer: submesh.indexBuffer.buffer,
-//                indexBufferOffset: submesh.indexBuffer.offset)
-//        }
-//        
         renderEncoder.endEncoding()
         commandBuffer.present(drawable)
         commandBuffer.commit()
