@@ -90,6 +90,11 @@ extension Renderer: MTKViewDelegate {
         
         timer += 0.005
 
+        // When possible, use indexed rendering. With indexed rendering, you pass less data to the GPU
+        // memory bandwidth is a major bottleneck
+        
+        // You can pass any data in an MTLBuffer to the GPU using setVertexBuffer(_:offset:index:)
+        // If the data is less than 4KB -> pass a structure using setVertexBytes(_:length:index:)
         renderEncoder.setVertexBytes(&total_points, length: MemoryLayout<UInt32>.stride, index: 0)
         renderEncoder.setVertexBytes(&timer, length: MemoryLayout<Float>.stride, index: 11)
         

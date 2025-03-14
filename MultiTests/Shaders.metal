@@ -15,6 +15,7 @@ struct VertexOut {
     float4 color;
 };
 
+// vertex function’s fundamental task is positioning vertices
 vertex VertexOut vertex_main(constant uint &count [[buffer(0)]], constant float &timer [[buffer(11)]], uint vertexID [[vertex_id]])
 {
     float radius = 0.8;

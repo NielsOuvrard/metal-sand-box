@@ -10,14 +10,12 @@ import MetalKit
 extension MTLVertexDescriptor {
     static var defaultLayout: MTLVertexDescriptor {
         let vertexDescriptor = MTLVertexDescriptor()
+
+        // the position of each vertex
         vertexDescriptor.attributes[0].format = .float3
         vertexDescriptor.attributes[0].offset = 0
         vertexDescriptor.attributes[0].bufferIndex = 0
-
-        // only one attribute:
-        // the position of each vertex
-        let stride = MemoryLayout<Vertex>.stride
-        vertexDescriptor.layouts[0].stride = stride
+        vertexDescriptor.layouts[0].stride = MemoryLayout<Vertex>.stride
 
         // color part
         vertexDescriptor.attributes[1].format = .float3
