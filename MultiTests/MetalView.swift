@@ -13,10 +13,19 @@ struct MetalView: View {
   @State private var metalView = MTKView()
   @State private var renderer: Renderer?
 
+  @Binding var totalPoints: UInt32
+  @Binding var showGrid: Bool
+
   var body: some View {
     MetalViewRepresentable(metalView: $metalView)
       .onAppear {
-        renderer = Renderer(metalView: metalView)
+        renderer = Renderer(metalView: metalView, totalPoints: totalPoints, showGrid: showGrid)
+      }
+      .onChange(of: totalPoints) { _, newValue in
+        renderer = Renderer(metalView: metalView, totalPoints: newValue, showGrid: showGrid)
+      }
+      .onChange(of: showGrid) { _, newValue in
+        renderer = Renderer(metalView: metalView, totalPoints: totalPoints, showGrid: newValue)
       }
   }
 }
@@ -51,9 +60,9 @@ struct MetalViewRepresentable: ViewRepresentable {
   }
 }
 
-#Preview {
-  VStack {
-    MetalView()
-    Text("Metal View")
-  }
-}
+//#Preview {
+//  VStack {
+//      MetalView(totalPoints:50, showGrid:true)
+//    Text("Metal View")
+//  }
+//}

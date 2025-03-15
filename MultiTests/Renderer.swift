@@ -17,8 +17,16 @@ class Renderer: NSObject {
     var trianglePipelineState: MTLRenderPipelineState!
     var timer: Float = 0
     var total_points: UInt32 = 50
+    var showGrid: Bool = true
 
-    init(metalView: MTKView) {
+    // lazy = initialized only when it's first used
+    lazy var quad: Quad = {
+        Quad(device: Self.device, scale: 0.8)
+    }()
+    
+    init(metalView: MTKView, totalPoints: UInt32, showGrid: Bool) {
+        self.total_points = totalPoints
+        self.showGrid = showGrid
         guard
             let device = MTLCreateSystemDefaultDevice(),
             let commandQueue = device.makeCommandQueue() else {
@@ -82,16 +90,12 @@ extension Renderer: MTKViewDelegate {
             return
         }
         
-        // lazy = initialized only when it's first used
-        lazy var quad: Quad = {
-            Quad(device: Self.device, scale: 0.8)
-        }()
     
         let renderPassDescriptor = MTLRenderPassDescriptor()
         renderPassDescriptor.colorAttachments[0].texture = drawable.texture
         renderPassDescriptor.colorAttachments[0].loadAction = .clear
         renderPassDescriptor.colorAttachments[0].storeAction = .store
-        renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 1, green: 1, blue: 0.81, alpha: 1)
+        renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0.3, green: 0.3, blue: 0.5, alpha: 1)
         
         let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
         
@@ -107,6 +111,41 @@ extension Renderer: MTKViewDelegate {
         
 
         // quad
+        var translation = matrix_float4x4()
+        translation.columns.0 = [1, 0, 0, 0]
+        translation.columns.1 = [0, 1, 0, 0]
+        translation.columns.2 = [0, 0, 1, 0]
+        translation.columns.3 = [0, 0, 0, 1]
+        //
+//        let position = simd_float3(0.5, -0.5, 0)
+//        translation.columns.3.x = position.x
+//        translation.columns.3.y = position.y
+//        translation.columns.3.z = position.z
+        
+        // 2 scale
+        let scaleX: Float = 1.2
+        let scaleY: Float = 0.5
+        let scaleMatrix = float4x4(
+            [scaleX, 0, 0, 0],
+            [0, scaleY, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1])
+    
+        // 3 rotation
+        let angle = (Float.pi / 2.0) * sin(timer)
+        let rotationMatrix = float4x4(
+            [cos(angle), -sin(angle), 0, 0],
+            [sin(angle), cos(angle), 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1])
+        // according to the third point (down-left)
+        var whichCorner = (showGrid) ? 2 : 1
+        translation.columns.3.x = quad.vertices[whichCorner].x
+        translation.columns.3.y = quad.vertices[whichCorner].y
+        translation.columns.3.z = quad.vertices[whichCorner].z
+        var matrix = translation * rotationMatrix * scaleMatrix * translation.inverse
+        renderEncoder.setVertexBytes(&matrix, length: MemoryLayout<matrix_float4x4>.stride, index: 13)
+            
         renderEncoder.setVertexBuffer(quad.vertexBuffer, offset: 0, index: 0)
         renderEncoder.setVertexBuffer(quad.colorBuffer, offset: 0, index: 1)
 
