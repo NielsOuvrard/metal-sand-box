@@ -13,8 +13,8 @@ class Renderer: NSObject {
     static var library: MTLLibrary!
 
     var mesh: MTKMesh!
-    //var vertexBuffer: MTLBuffer!
-    var pipelineState: MTLRenderPipelineState!
+    var pointPipelineState: MTLRenderPipelineState!
+    var trianglePipelineState: MTLRenderPipelineState!
     var timer: Float = 0
     var total_points: UInt32 = 50
 
@@ -31,7 +31,6 @@ class Renderer: NSObject {
         // create the shader function library
         let library = device.makeDefaultLibrary()
         Self.library = library
-        let vertexFunction = library?.makeFunction(name: "vertex_main")
         let fragmentFunction = library?.makeFunction(name: "fragment_main")
 
         // create the pipeline state object
@@ -39,13 +38,21 @@ class Renderer: NSObject {
         // Creating pipeline states is relatively time-consuming
         // which is why you do it up-front
         // but switching pipeline states during frames is fast and efficient
-        let pipelineDescriptor = MTLRenderPipelineDescriptor()
-        pipelineDescriptor.vertexFunction = vertexFunction
-        pipelineDescriptor.fragmentFunction = fragmentFunction
-        pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        let trianglePipelineDescriptor = MTLRenderPipelineDescriptor()
+        trianglePipelineDescriptor.vertexFunction = library?.makeFunction(name: "triangle_vertex_main")
+        trianglePipelineDescriptor.fragmentFunction = fragmentFunction
+        trianglePipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        trianglePipelineDescriptor.vertexDescriptor = MTLVertexDescriptor.defaultLayout
+        
+        
+        let pointPipelineDescriptor = MTLRenderPipelineDescriptor()
+        pointPipelineDescriptor.vertexFunction = library?.makeFunction(name: "point_vertex_main")
+        pointPipelineDescriptor.fragmentFunction = fragmentFunction
+        pointPipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
 
         do {
-            pipelineState = try device.makeRenderPipelineState(descriptor: pipelineDescriptor)
+            trianglePipelineState = try device.makeRenderPipelineState(descriptor: trianglePipelineDescriptor)
+            pointPipelineState = try device.makeRenderPipelineState(descriptor: pointPipelineDescriptor)
         } catch {
             fatalError(error.localizedDescription)
         }
@@ -95,12 +102,22 @@ extension Renderer: MTKViewDelegate {
         
         // You can pass any data in an MTLBuffer to the GPU using setVertexBuffer(_:offset:index:)
         // If the data is less than 4KB -> pass a structure using setVertexBytes(_:length:index:)
-        renderEncoder.setVertexBytes(&total_points, length: MemoryLayout<UInt32>.stride, index: 0)
+        renderEncoder.setVertexBytes(&total_points, length: MemoryLayout<UInt32>.stride, index: 12)
         renderEncoder.setVertexBytes(&timer, length: MemoryLayout<Float>.stride, index: 11)
         
-        renderEncoder.setRenderPipelineState(pipelineState)
+
+        // quad
+        renderEncoder.setVertexBuffer(quad.vertexBuffer, offset: 0, index: 0)
+        renderEncoder.setVertexBuffer(quad.colorBuffer, offset: 0, index: 1)
+
+        // Draw quad
+        renderEncoder.setRenderPipelineState(trianglePipelineState)
+        renderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: quad.indices.count, indexType: .uint16, indexBuffer: quad.indexBuffer, indexBufferOffset: 0)
+
+        // Draw points
+        renderEncoder.setRenderPipelineState(pointPipelineState)
         renderEncoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: Int(total_points), instanceCount: 1)
-        
+
         renderEncoder.endEncoding()
         commandBuffer.present(drawable)
         commandBuffer.commit()
