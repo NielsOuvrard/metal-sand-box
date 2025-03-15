@@ -116,12 +116,7 @@ extension Renderer: MTKViewDelegate {
         translation.columns.1 = [0, 1, 0, 0]
         translation.columns.2 = [0, 0, 1, 0]
         translation.columns.3 = [0, 0, 0, 1]
-        //
-//        let position = simd_float3(0.5, -0.5, 0)
-//        translation.columns.3.x = position.x
-//        translation.columns.3.y = position.y
-//        translation.columns.3.z = position.z
-        
+
         // 2 scale
         let scaleX: Float = 1.2
         let scaleY: Float = 0.5
@@ -139,8 +134,8 @@ extension Renderer: MTKViewDelegate {
             [0, 0, 1, 0],
             [0, 0, 0, 1])
         // according to the third point (down-left)
-        var whichCorner = (showGrid) ? 2 : 1
-        translation.columns.3.x = quad.vertices[whichCorner].x
+        let whichCorner = (showGrid) ? 2 : 1
+        translation.columns.3.x = quad.vertices[whichCorner].x // + 0.1 // change the origin of the rotation
         translation.columns.3.y = quad.vertices[whichCorner].y
         translation.columns.3.z = quad.vertices[whichCorner].z
         var matrix = translation * rotationMatrix * scaleMatrix * translation.inverse
