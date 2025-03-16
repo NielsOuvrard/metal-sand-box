@@ -17,14 +17,6 @@ MetalSandBox is a Metal-based application which the purpose is to learn how to u
 - `Shaders.metal`: The Metal shader functions used for rendering.
 - And more...
 
-## Screenshots
-
-![Screenshot](Screenshots/preview.png)
-
-We can see the usage of rotation, translation, and scaling in the Metal shaders.
-The rectangle is originally a cube, but we scale it to a rectangle.
-It is rotated around the bottom-left corner.
-
 ## Point's Shader
 
 ```metal
@@ -47,3 +39,11 @@ vertex VertexOut point_vertex_main(
     return out;
 }
 ```
+
+## Screenshots
+
+![Screenshot](Screenshots/preview.png)
+
+We can see the usage of rotation, translation, and scaling in the Metal shaders.
+The rectangle is originally a cube, but we scale it to a rectangle.
+It is rotated around the bottom-left corner.
