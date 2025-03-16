@@ -1,6 +1,6 @@
 # Metal Sand Box
 
-MetalSandBox is a Metal-based application which the purpose is to learn how to use Metal to render graphics. I base my work on the book ["Metal by Tutorials"](https://www.kodeco.com/books/metal-by-tutorials/v4.0) by Caroline Begbie, Tim Oliver, and Marius Horga.
+MetalSandBox is a Metal-based application designed as a learning platform for Metal graphics rendering on Apple platforms. This project serves as a practical implementation of concepts from the book ["Metal by Tutorials"](https://www.kodeco.com/books/metal-by-tutorials/v4.0) by Caroline Begbie, Tim Oliver, and Marius Horga.
 
 
 ## Demo's Features
