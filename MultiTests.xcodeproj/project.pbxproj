@@ -30,7 +30,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		DDCB23912D500E1900C6DFB1 /* MultiTests */ = {
+		DD05336C2D88A4AC006A5216 /* MultiTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = MultiTests;
 			sourceTree = "<group>";
@@ -75,10 +75,10 @@
 		DDCB23862D500E1900C6DFB1 = {
 			isa = PBXGroup;
 			children = (
-				DDCB23912D500E1900C6DFB1 /* MultiTests */,
 				DDCB23A32D500E1A00C6DFB1 /* MultiTestsTests */,
 				DDCB23AD2D500E1A00C6DFB1 /* MultiTestsUITests */,
 				DDCB23902D500E1900C6DFB1 /* Products */,
+				DD05336C2D88A4AC006A5216 /* MultiTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -108,7 +108,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				DDCB23912D500E1900C6DFB1 /* MultiTests */,
+				DD05336C2D88A4AC006A5216 /* MultiTests */,
 			);
 			name = MultiTests;
 			packageProductDependencies = (
@@ -326,6 +326,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OBJC_BRIDGING_HEADER = MultiTests/Shaders/Common.h;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -380,6 +381,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OBJC_BRIDGING_HEADER = MultiTests/Shaders/Common.h;
 			};
 			name = Release;
 		};

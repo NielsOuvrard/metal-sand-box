@@ -8,21 +8,22 @@
 import MetalKit
 
 extension MTLVertexDescriptor {
-    static var defaultLayout: MTLVertexDescriptor {
-        let vertexDescriptor = MTLVertexDescriptor()
+    static var defaultLayout: MTLVertexDescriptor? {
+        MTKMetalVertexDescriptorFromModelIO(.defaultLayout)
+    }
+}
 
-        // the position of each vertex
-        vertexDescriptor.attributes[0].format = .float3
-        vertexDescriptor.attributes[0].offset = 0
-        vertexDescriptor.attributes[0].bufferIndex = 0
-        vertexDescriptor.layouts[0].stride = MemoryLayout<Vertex>.stride
-
-        // color part
-        vertexDescriptor.attributes[1].format = .float3
-        vertexDescriptor.attributes[1].offset = 0
-        vertexDescriptor.attributes[1].bufferIndex = 1
-        vertexDescriptor.layouts[1].stride = MemoryLayout<simd_float3>.stride
-
+extension MDLVertexDescriptor {
+    static var defaultLayout: MDLVertexDescriptor {
+        let vertexDescriptor = MDLVertexDescriptor()
+        var offset = 0
+        vertexDescriptor.attributes[0] = MDLVertexAttribute(
+            name: MDLVertexAttributePosition,
+            format: .float3,
+            offset: 0,
+            bufferIndex: 0)
+        offset += MemoryLayout<float3>.stride
+        vertexDescriptor.layouts[0] = MDLVertexBufferLayout(stride: offset)
         return vertexDescriptor
     }
 }

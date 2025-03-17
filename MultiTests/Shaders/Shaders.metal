@@ -7,6 +7,7 @@
 
 
 #include <metal_stdlib>
+#import "Common.h"
 using namespace metal;
 
 struct VertexOut {
@@ -54,6 +55,20 @@ vertex VertexOut point_vertex_main(
     };
     return out;
 }
+
+
+vertex VertexOut mesh_vertex_main(
+                             VertexIn in [[stage_in]],
+                             constant Uniforms &uniforms [[buffer(14)]])
+{
+    float4 position = uniforms.projectionMatrix * uniforms.viewMatrix * uniforms.modelMatrix * in.position;
+    VertexOut out {
+        .position = position,
+        .color = float4(0.2, 0.5, 1.0, 1)
+    };
+    return out;
+}
+
 
 fragment float4 fragment_main(VertexOut in [[stage_in]]) {
     return in.color;

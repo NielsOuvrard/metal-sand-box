@@ -11,18 +11,25 @@ class Renderer: NSObject {
     static var device: MTLDevice!
     static var commandQueue: MTLCommandQueue!
     static var library: MTLLibrary!
-
+    
     var mesh: MTKMesh!
     var pointPipelineState: MTLRenderPipelineState!
     var trianglePipelineState: MTLRenderPipelineState!
+    var meshPipelineState: MTLRenderPipelineState!
     var timer: Float = 0
     var total_points: UInt32 = 50
     var showGrid: Bool = true
-
+    var uniforms = Uniforms()
+    
     // lazy = initialized only when it's first used
     lazy var quad: Quad = {
         Quad(device: Self.device, scale: 0.8)
     }()
+    
+    lazy var model: Model = {
+        Model(device: Renderer.device, name: "train.usdz")
+    }()
+    
     
     init(metalView: MTKView, totalPoints: UInt32, showGrid: Bool) {
         self.total_points = totalPoints
@@ -30,19 +37,19 @@ class Renderer: NSObject {
         guard
             let device = MTLCreateSystemDefaultDevice(),
             let commandQueue = device.makeCommandQueue() else {
-                fatalError("GPU not available")
+            fatalError("GPU not available")
         }
         Self.device = device
         Self.commandQueue = commandQueue
         metalView.device = device
-
+        
         // create the shader function library
         let library = device.makeDefaultLibrary()
         Self.library = library
         let fragmentFunction = library?.makeFunction(name: "fragment_main")
-
+        
         // create the pipeline state object
-
+        
         // Creating pipeline states is relatively time-consuming
         // which is why you do it up-front
         // but switching pipeline states during frames is fast and efficient
@@ -50,17 +57,38 @@ class Renderer: NSObject {
         trianglePipelineDescriptor.vertexFunction = library?.makeFunction(name: "triangle_vertex_main")
         trianglePipelineDescriptor.fragmentFunction = fragmentFunction
         trianglePipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-        trianglePipelineDescriptor.vertexDescriptor = MTLVertexDescriptor.defaultLayout
+        let vertexDescriptor = MTLVertexDescriptor()
+        
+        // the position of each vertex
+        vertexDescriptor.attributes[0].format = .float3
+        vertexDescriptor.attributes[0].offset = 0
+        vertexDescriptor.attributes[0].bufferIndex = 0
+        vertexDescriptor.layouts[0].stride = MemoryLayout<Vertex>.stride
+        
+        // color part
+        vertexDescriptor.attributes[1].format = .float3
+        vertexDescriptor.attributes[1].offset = 0
+        vertexDescriptor.attributes[1].bufferIndex = 1
+        vertexDescriptor.layouts[1].stride = MemoryLayout<simd_float3>.stride
+        
+        trianglePipelineDescriptor.vertexDescriptor = vertexDescriptor
         
         
         let pointPipelineDescriptor = MTLRenderPipelineDescriptor()
         pointPipelineDescriptor.vertexFunction = library?.makeFunction(name: "point_vertex_main")
         pointPipelineDescriptor.fragmentFunction = fragmentFunction
         pointPipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-
+        
+        let meshPipelineDescriptor = MTLRenderPipelineDescriptor()
+        meshPipelineDescriptor.vertexFunction = library?.makeFunction(name: "mesh_vertex_main")
+        meshPipelineDescriptor.fragmentFunction = fragmentFunction
+        meshPipelineDescriptor.colorAttachments[0].pixelFormat = metalView.colorPixelFormat
+        meshPipelineDescriptor.vertexDescriptor = MTLVertexDescriptor.defaultLayout
+        
         do {
             trianglePipelineState = try device.makeRenderPipelineState(descriptor: trianglePipelineDescriptor)
             pointPipelineState = try device.makeRenderPipelineState(descriptor: pointPipelineDescriptor)
+            meshPipelineState = try device.makeRenderPipelineState(descriptor: meshPipelineDescriptor)
         } catch {
             fatalError(error.localizedDescription)
         }
@@ -77,6 +105,13 @@ extension Renderer: MTKViewDelegate {
         _ view: MTKView,
         drawableSizeWillChange size: CGSize
     ) {
+        let aspect = Float(view.bounds.width) / Float(view.bounds.height)
+        let projectionMatrix = float4x4(
+            projectionFov: Float(45).degreesToRadians,
+            near: 0.1,
+            far: 100,
+            aspect: aspect)
+        uniforms.projectionMatrix = projectionMatrix
     }
     
     func draw(in view: MTKView) {
@@ -85,22 +120,14 @@ extension Renderer: MTKViewDelegate {
         }
         
         guard
-            let commandBuffer = Self.commandQueue.makeCommandBuffer()
-        else {
+            let commandBuffer = Self.commandQueue.makeCommandBuffer(),
+            let descriptor = view.currentRenderPassDescriptor,
+            let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor) else {
             return
         }
-        
-    
-        let renderPassDescriptor = MTLRenderPassDescriptor()
-        renderPassDescriptor.colorAttachments[0].texture = drawable.texture
-        renderPassDescriptor.colorAttachments[0].loadAction = .clear
-        renderPassDescriptor.colorAttachments[0].storeAction = .store
-        renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColor(red: 0.3, green: 0.3, blue: 0.5, alpha: 1)
-        
-        let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)!
-        
-        timer += 0.005
 
+        timer += 0.005
+        
         // When possible, use indexed rendering. With indexed rendering, you pass less data to the GPU
         // memory bandwidth is a major bottleneck
         
@@ -109,14 +136,14 @@ extension Renderer: MTKViewDelegate {
         renderEncoder.setVertexBytes(&total_points, length: MemoryLayout<UInt32>.stride, index: 12)
         renderEncoder.setVertexBytes(&timer, length: MemoryLayout<Float>.stride, index: 11)
         
-
+        
         // quad
         var translation = matrix_float4x4()
         translation.columns.0 = [1, 0, 0, 0]
         translation.columns.1 = [0, 1, 0, 0]
         translation.columns.2 = [0, 0, 1, 0]
         translation.columns.3 = [0, 0, 0, 1]
-
+        
         // 2 scale
         let scaleX: Float = 1.2
         let scaleY: Float = 0.5
@@ -125,7 +152,7 @@ extension Renderer: MTKViewDelegate {
             [0, scaleY, 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1])
-    
+        
         // 3 rotation
         let angle = (Float.pi / 2.0) * sin(timer)
         let rotationMatrix = float4x4(
@@ -140,18 +167,32 @@ extension Renderer: MTKViewDelegate {
         translation.columns.3.z = quad.vertices[whichCorner].z
         var matrix = translation * rotationMatrix * scaleMatrix * translation.inverse
         renderEncoder.setVertexBytes(&matrix, length: MemoryLayout<matrix_float4x4>.stride, index: 13)
-            
+        
         renderEncoder.setVertexBuffer(quad.vertexBuffer, offset: 0, index: 0)
         renderEncoder.setVertexBuffer(quad.colorBuffer, offset: 0, index: 1)
-
+        
         // Draw quad
         renderEncoder.setRenderPipelineState(trianglePipelineState)
         renderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: quad.indices.count, indexType: .uint16, indexBuffer: quad.indexBuffer, indexBufferOffset: 0)
-
+        
         // Draw points
         renderEncoder.setRenderPipelineState(pointPipelineState)
         renderEncoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: Int(total_points), instanceCount: 1)
-
+        
+        // Draw mesh
+        renderEncoder.setRenderPipelineState(meshPipelineState)
+        uniforms.viewMatrix = float4x4(translation: [0, 0, -3]).inverse
+        model.position.y = -0.6
+        model.rotation.y = sin(timer)
+        uniforms.modelMatrix = model.transform.modelMatrix
+        
+        renderEncoder.setVertexBytes(
+            &uniforms,
+            length: MemoryLayout<Uniforms>.stride,
+            index: 14)
+        
+        model.render(encoder: renderEncoder)
+        
         renderEncoder.endEncoding()
         commandBuffer.present(drawable)
         commandBuffer.commit()

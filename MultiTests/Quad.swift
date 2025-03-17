@@ -30,7 +30,7 @@ struct Quad {
         [0, 0, 1], // blue
         [1, 1, 0] // yellow
     ]
-
+    
     let vertexBuffer: MTLBuffer
     let indexBuffer: MTLBuffer
     let colorBuffer: MTLBuffer
