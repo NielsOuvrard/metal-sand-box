@@ -210,6 +210,8 @@ extension Renderer: MTKViewDelegate {
         renderEncoder.setVertexBuffer(quad.colorBuffer, offset: 0, index: 1)
         
         // Draw quad
+        renderEncoder.setCullMode(.back)
+        renderEncoder.setFrontFacing(.counterClockwise)
         renderEncoder.setRenderPipelineState(trianglePipelineState)
         renderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: quad.indices.count, indexType: .uint16, indexBuffer: quad.indexBuffer, indexBufferOffset: 0)
         
@@ -218,6 +220,7 @@ extension Renderer: MTKViewDelegate {
         renderEncoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: Int(total_points), instanceCount: 1)
         
         // Draw mesh
+        renderEncoder.setCullMode(.front)
         renderEncoder.setRenderPipelineState(meshPipelineState)
         renderEncoder.setTriangleFillMode(.lines)
         trainUniforms.viewMatrix = float4x4(translation: [0, 0, -3]).inverse

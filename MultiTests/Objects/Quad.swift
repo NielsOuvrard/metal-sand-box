@@ -17,20 +17,46 @@ struct Quad: Transformable {
     var transform = Transform()
 
     var vertices: [Vertex] = [
-        Vertex(x: -1, y:  1, z: 0.5),
-        Vertex(x:  1, y:  1, z: 0.5),
-        Vertex(x: -1, y: -1, z: 0.5),
-        Vertex(x:  1, y: -1, z: 0.5)
+        Vertex(x: -0.5, y:  0.5, z:  0.5), // Front top-left
+        Vertex(x:  0.5, y:  0.5, z:  0.5), // Front top-right
+        Vertex(x: -0.5, y: -0.5, z:  0.5), // Front bottom-left
+        Vertex(x:  0.5, y: -0.5, z:  0.5), // Front bottom-right
+        Vertex(x: -0.5, y:  0.5, z: -0.5), // Back top-left
+        Vertex(x:  0.5, y:  0.5, z: -0.5), // Back top-right
+        Vertex(x: -0.5, y: -0.5, z: -0.5), // Back bottom-left
+        Vertex(x:  0.5, y: -0.5, z: -0.5)  // Back bottom-right
     ]
+
     var indices: [UInt16] = [
-        0, 3, 2,
-        0, 1, 3
+        // Front face
+        0, 1, 2,
+        1, 3, 2,
+        // Back face
+        4, 6, 5,
+        5, 6, 7,
+        // Left face
+        0, 2, 4,
+        4, 2, 6,
+        // Right face
+        1, 5, 3,
+        5, 7, 3,
+        // Top face
+        0, 4, 1,
+        1, 4, 5,
+        // Bottom face
+        2, 3, 6,
+        6, 3, 7
     ]
+
     var colors: [simd_float3] = [
-        [0.6, 0, 0],
-        [1, 0, 0],
-        [0.95, 0, 0],
-        [0.7, 0, 0]
+        [1, 0, 0], // Red
+        [0, 1, 0], // Green
+        [0, 0, 1], // Blue
+        [1, 1, 0], // Yellow
+        [1, 0, 1], // Magenta
+        [0, 1, 1], // Cyan
+        [0.5, 0.5, 0.5], // Gray
+        [1, 1, 1]  // White
     ]
     
     let vertexBuffer: MTLBuffer
