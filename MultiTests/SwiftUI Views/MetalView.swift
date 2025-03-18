@@ -9,23 +9,39 @@
 import SwiftUI
 import MetalKit
 
+
+extension Color {
+    func toFloat4() -> simd_float4 {
+        let components = self.cgColor?.components ?? [0, 0, 0, 1]
+        return simd_float4(Float(components[0]), Float(components[1]), Float(components[2]), Float(components[3]))
+    }
+}
+
 struct MetalView: View {
     @State private var metalView = MTKView()
     @State private var renderer: Renderer?
     
     @Binding var totalPoints: UInt32
     @Binding var showGrid: Bool
+    @Binding var modifier: CubeModifier
+    @Binding var color: Color
     
     var body: some View {
         MetalViewRepresentable(metalView: $metalView)
             .onAppear {
-                renderer = Renderer(metalView: metalView, totalPoints: totalPoints, showGrid: showGrid)
+                renderer = Renderer(metalView: metalView, totalPoints: totalPoints, showGrid: showGrid, modifier: modifier, color: color.toFloat4())
             }
             .onChange(of: totalPoints) { _, newValue in
-                renderer = Renderer(metalView: metalView, totalPoints: newValue, showGrid: showGrid)
+                renderer?.updateTotalPoints(newValue)
             }
             .onChange(of: showGrid) { _, newValue in
-                renderer = Renderer(metalView: metalView, totalPoints: totalPoints, showGrid: newValue)
+                renderer?.updateShowGrid(newValue)
+            }
+            .onChange(of: modifier) { _, newValue in
+                renderer?.updateModifier(newValue)
+            }
+            .onChange(of: color) { _, newValue in
+                renderer?.updateColor(newValue.toFloat4())
             }
     }
 }

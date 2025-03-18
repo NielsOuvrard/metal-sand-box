@@ -19,12 +19,15 @@ class Renderer: NSObject {
     var timer: Float = 0
     var total_points: UInt32 = 50
     var showGrid: Bool = true
+    var modifier: CubeModifier = CubeModifier()
     var trainUniforms = Uniforms()
     var quadUniforms = Uniforms()
     
     // lazy = initialized only when it's first used
     lazy var quad: Quad = {
-        Quad(device: Self.device, scale: 0.8)
+        var quad = Quad(device: Self.device, scale: 0.8)
+        quad.updateColors([1, 0, 0])
+        return quad
     }()
     
     lazy var model: Model = {
@@ -32,9 +35,11 @@ class Renderer: NSObject {
     }()
     
     
-    init(metalView: MTKView, totalPoints: UInt32, showGrid: Bool) {
+    init(metalView: MTKView, totalPoints: UInt32, showGrid: Bool, modifier: CubeModifier, color: simd_float4) {
         self.total_points = totalPoints
         self.showGrid = showGrid
+        self.modifier = modifier
+
         guard
             let device = MTLCreateSystemDefaultDevice(),
             let commandQueue = device.makeCommandQueue() else {
@@ -99,6 +104,22 @@ class Renderer: NSObject {
         metalView.clearColor = MTLClearColor(red: 0.1, green: 0.1, blue: 0.4, alpha: 1.0)
         metalView.delegate = self
     }
+
+    func updateTotalPoints(_ totalPoints: UInt32) {
+        self.total_points = totalPoints
+    }
+
+    func updateShowGrid(_ showGrid: Bool) {
+        self.showGrid = showGrid
+    }
+
+    func updateModifier(_ modifier: CubeModifier) {
+        self.modifier = modifier
+    }
+
+    func updateColor(_ color: simd_float4) {
+        quad.updateColors(color.xyz)
+    }
 }
 
 extension Renderer: MTKViewDelegate {
@@ -142,7 +163,10 @@ extension Renderer: MTKViewDelegate {
         quad.position.x = -1
         quad.position.y = 1
         quad.position.z = 6
+        
+        quad.rotation.x = sin(timer)
         quad.rotation.z = cos(timer)
+        
         quadUniforms.modelMatrix = quad.transform.modelMatrix
         renderEncoder.setVertexBytes(&quadUniforms, length: MemoryLayout<Uniforms>.stride, index: 14)
         renderEncoder.setVertexBuffer(quad.vertexBuffer, offset: 0, index: 0)
@@ -161,7 +185,21 @@ extension Renderer: MTKViewDelegate {
         renderEncoder.setTriangleFillMode(.lines)
         trainUniforms.viewMatrix = float4x4(translation: [0, 0, -3]).inverse
         model.position.y = -0.6
-        model.rotation.y = sin(timer)
+        if (modifier.rotateX) {
+            model.rotation.x = sin(timer)
+        } else {
+            model.rotation.x = modifier.angleX.degreesToRadians
+        }
+        if (modifier.rotateY) {
+            model.rotation.y = cos(timer)
+        } else {
+            model.rotation.y = modifier.angleY.degreesToRadians
+        }
+        if (modifier.rotateZ) {
+            model.rotation.z = sin(timer)
+        } else {
+            model.rotation.z = modifier.angleZ.degreesToRadians
+        }
         trainUniforms.modelMatrix = model.transform.modelMatrix
         renderEncoder.setVertexBytes(&trainUniforms, length: MemoryLayout<Uniforms>.stride, index: 14)
         

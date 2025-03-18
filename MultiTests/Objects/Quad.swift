@@ -59,4 +59,9 @@ struct Quad: Transformable {
         }
         self.colorBuffer = colorBuffer
     }
+
+    mutating func updateColors(_ color: simd_float3) {
+        colors = [color, color * 0.4, color * 0.5, color * 0.9]
+        colorBuffer.contents().copyMemory(from: colors, byteCount: MemoryLayout<simd_float3>.stride * colors.count)
+    }
 }
