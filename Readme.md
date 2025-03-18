@@ -42,8 +42,13 @@ vertex VertexOut point_vertex_main(
 
 ## Screenshots
 
-![Screenshot](Screenshots/preview.png)
+![Screenshot](Screenshots/preview4.jpeg)
 
 We can see the usage of rotation, translation, and scaling in the Metal shaders.
-The rectangle is originally a cube, but we scale it to a rectangle.
+The train is a mesh took from a USDZ file, at the back a square and some points, which the shader is above.
+The train is rotated around the center, and the slider controls the rotation.
 It is rotated around the bottom-left corner.
+
+![Screenshot](Screenshots/preview3.png)
+
+The train is a mesh took from a USDZ file, at the back a square and some points, which the shader is above.
