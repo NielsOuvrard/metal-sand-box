@@ -25,7 +25,8 @@ struct ContentView: View {
                     Grid()
                 }
             }
-            .frame(width: size, height: size)
+            .frame(height: size)
+            .padding()
             ZStack(alignment: .top) {
                 //Key()
                 Toggle("Show Grid", isOn: $showGrid)

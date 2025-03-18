@@ -13,22 +13,24 @@ struct Vertex {
     var z: Float
 }
 
-struct Quad {
+struct Quad: Transformable {
+    var transform = Transform()
+
     var vertices: [Vertex] = [
-        Vertex(x: -1, y:  1, z: 0),
-        Vertex(x:  1, y:  1, z: 0),
-        Vertex(x: -1, y: -1, z: 0),
-        Vertex(x:  1, y: -1, z: 0)
+        Vertex(x: -1, y:  1, z: 0.5),
+        Vertex(x:  1, y:  1, z: 0.5),
+        Vertex(x: -1, y: -1, z: 0.5),
+        Vertex(x:  1, y: -1, z: 0.5)
     ]
     var indices: [UInt16] = [
         0, 3, 2,
         0, 1, 3
     ]
     var colors: [simd_float3] = [
-        [1, 0, 0], // red
-        [0, 1, 0], // green
-        [0, 0, 1], // blue
-        [1, 1, 0] // yellow
+        [0.6, 0, 0],
+        [1, 0, 0],
+        [0.95, 0, 0],
+        [0.7, 0, 0]
     ]
     
     let vertexBuffer: MTLBuffer

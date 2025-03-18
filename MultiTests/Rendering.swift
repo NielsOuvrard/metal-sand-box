@@ -10,10 +10,7 @@ import MetalKit
 // Rendering
 extension Model {
     func render(encoder: MTLRenderCommandEncoder) {
-        encoder.setVertexBuffer(
-            mesh.vertexBuffers[0].buffer,
-            offset: 0,
-            index: 0)
+        encoder.setVertexBuffer(mesh.vertexBuffers[0].buffer, offset: 0, index: 0)
         
         for submesh in mesh.submeshes {
             encoder.drawIndexedPrimitives(

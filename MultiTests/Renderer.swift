@@ -19,7 +19,8 @@ class Renderer: NSObject {
     var timer: Float = 0
     var total_points: UInt32 = 50
     var showGrid: Bool = true
-    var uniforms = Uniforms()
+    var trainUniforms = Uniforms()
+    var quadUniforms = Uniforms()
     
     // lazy = initialized only when it's first used
     lazy var quad: Quad = {
@@ -57,21 +58,21 @@ class Renderer: NSObject {
         trianglePipelineDescriptor.vertexFunction = library?.makeFunction(name: "triangle_vertex_main")
         trianglePipelineDescriptor.fragmentFunction = fragmentFunction
         trianglePipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-        let vertexDescriptor = MTLVertexDescriptor()
+        let triangleVertexDescriptor = MTLVertexDescriptor()
         
         // the position of each vertex
-        vertexDescriptor.attributes[0].format = .float3
-        vertexDescriptor.attributes[0].offset = 0
-        vertexDescriptor.attributes[0].bufferIndex = 0
-        vertexDescriptor.layouts[0].stride = MemoryLayout<Vertex>.stride
+        triangleVertexDescriptor.attributes[0].format = .float3
+        triangleVertexDescriptor.attributes[0].offset = 0
+        triangleVertexDescriptor.attributes[0].bufferIndex = 0
+        triangleVertexDescriptor.layouts[0].stride = MemoryLayout<Vertex>.stride
         
         // color part
-        vertexDescriptor.attributes[1].format = .float3
-        vertexDescriptor.attributes[1].offset = 0
-        vertexDescriptor.attributes[1].bufferIndex = 1
-        vertexDescriptor.layouts[1].stride = MemoryLayout<simd_float3>.stride
+        triangleVertexDescriptor.attributes[1].format = .float3
+        triangleVertexDescriptor.attributes[1].offset = 0
+        triangleVertexDescriptor.attributes[1].bufferIndex = 1
+        triangleVertexDescriptor.layouts[1].stride = MemoryLayout<simd_float3>.stride
         
-        trianglePipelineDescriptor.vertexDescriptor = vertexDescriptor
+        trianglePipelineDescriptor.vertexDescriptor = triangleVertexDescriptor
         
         
         let pointPipelineDescriptor = MTLRenderPipelineDescriptor()
@@ -95,7 +96,7 @@ class Renderer: NSObject {
         
         super.init()
         
-        metalView.clearColor = MTLClearColor(red: 1.0, green: 1.0, blue: 0.8, alpha: 1.0)
+        metalView.clearColor = MTLClearColor(red: 0.1, green: 0.1, blue: 0.4, alpha: 1.0)
         metalView.delegate = self
     }
 }
@@ -111,7 +112,8 @@ extension Renderer: MTKViewDelegate {
             near: 0.1,
             far: 100,
             aspect: aspect)
-        uniforms.projectionMatrix = projectionMatrix
+        trainUniforms.projectionMatrix = projectionMatrix
+        quadUniforms.projectionMatrix = projectionMatrix
     }
     
     func draw(in view: MTKView) {
@@ -126,7 +128,7 @@ extension Renderer: MTKViewDelegate {
             return
         }
 
-        timer += 0.005
+        timer += 0.01
         
         // When possible, use indexed rendering. With indexed rendering, you pass less data to the GPU
         // memory bandwidth is a major bottleneck
@@ -136,38 +138,13 @@ extension Renderer: MTKViewDelegate {
         renderEncoder.setVertexBytes(&total_points, length: MemoryLayout<UInt32>.stride, index: 12)
         renderEncoder.setVertexBytes(&timer, length: MemoryLayout<Float>.stride, index: 11)
         
-        
-        // quad
-        var translation = matrix_float4x4()
-        translation.columns.0 = [1, 0, 0, 0]
-        translation.columns.1 = [0, 1, 0, 0]
-        translation.columns.2 = [0, 0, 1, 0]
-        translation.columns.3 = [0, 0, 0, 1]
-        
-        // 2 scale
-        let scaleX: Float = 1.2
-        let scaleY: Float = 0.5
-        let scaleMatrix = float4x4(
-            [scaleX, 0, 0, 0],
-            [0, scaleY, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1])
-        
-        // 3 rotation
-        let angle = (Float.pi / 2.0) * sin(timer)
-        let rotationMatrix = float4x4(
-            [cos(angle), -sin(angle), 0, 0],
-            [sin(angle), cos(angle), 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1])
-        // according to the third point (down-left)
-        let whichCorner = (showGrid) ? 2 : 1
-        translation.columns.3.x = quad.vertices[whichCorner].x // + 0.1 // change the origin of the rotation
-        translation.columns.3.y = quad.vertices[whichCorner].y
-        translation.columns.3.z = quad.vertices[whichCorner].z
-        var matrix = translation * rotationMatrix * scaleMatrix * translation.inverse
-        renderEncoder.setVertexBytes(&matrix, length: MemoryLayout<matrix_float4x4>.stride, index: 13)
-        
+        quadUniforms.viewMatrix = float4x4(translation: [0, 0, 0]).inverse
+        quad.position.x = -1
+        quad.position.y = 1
+        quad.position.z = 6
+        quad.rotation.z = cos(timer)
+        quadUniforms.modelMatrix = quad.transform.modelMatrix
+        renderEncoder.setVertexBytes(&quadUniforms, length: MemoryLayout<Uniforms>.stride, index: 14)
         renderEncoder.setVertexBuffer(quad.vertexBuffer, offset: 0, index: 0)
         renderEncoder.setVertexBuffer(quad.colorBuffer, offset: 0, index: 1)
         
@@ -181,15 +158,12 @@ extension Renderer: MTKViewDelegate {
         
         // Draw mesh
         renderEncoder.setRenderPipelineState(meshPipelineState)
-        uniforms.viewMatrix = float4x4(translation: [0, 0, -3]).inverse
+        renderEncoder.setTriangleFillMode(.lines)
+        trainUniforms.viewMatrix = float4x4(translation: [0, 0, -3]).inverse
         model.position.y = -0.6
         model.rotation.y = sin(timer)
-        uniforms.modelMatrix = model.transform.modelMatrix
-        
-        renderEncoder.setVertexBytes(
-            &uniforms,
-            length: MemoryLayout<Uniforms>.stride,
-            index: 14)
+        trainUniforms.modelMatrix = model.transform.modelMatrix
+        renderEncoder.setVertexBytes(&trainUniforms, length: MemoryLayout<Uniforms>.stride, index: 14)
         
         model.render(encoder: renderEncoder)
         

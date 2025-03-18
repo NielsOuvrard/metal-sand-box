@@ -24,13 +24,12 @@ struct VertexIn {
 vertex VertexOut triangle_vertex_main(
                                       VertexIn in [[stage_in]],
                                       constant float &timer [[buffer(11)]],
-                                      constant float4x4 &matrix [[buffer(13)]])
+                                      constant Uniforms &uniforms [[buffer(14)]])
 {
-    float4 translation = matrix * in.position;
+    float4 position = uniforms.projectionMatrix * uniforms.viewMatrix * uniforms.modelMatrix * in.position;
     VertexOut out {
-        .position = translation,
+        .position = position,
         .color = in.color
-        // .pointSize = 200
     };
     return out;
 }
@@ -58,8 +57,8 @@ vertex VertexOut point_vertex_main(
 
 
 vertex VertexOut mesh_vertex_main(
-                             VertexIn in [[stage_in]],
-                             constant Uniforms &uniforms [[buffer(14)]])
+                                  VertexIn in [[stage_in]],
+                                  constant Uniforms &uniforms [[buffer(14)]])
 {
     float4 position = uniforms.projectionMatrix * uniforms.viewMatrix * uniforms.modelMatrix * in.position;
     VertexOut out {
