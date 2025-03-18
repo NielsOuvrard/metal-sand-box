@@ -22,20 +22,24 @@ struct MetalView: View {
     @State private var renderer: Renderer?
     
     @Binding var totalPoints: UInt32
-    @Binding var showGrid: Bool
+    @Binding var rightJoystickPosition: CGPoint
+    @Binding var leftJoystickPosition: CGPoint
     @Binding var modifier: CubeModifier
     @Binding var color: Color
     
     var body: some View {
         MetalViewRepresentable(metalView: $metalView)
             .onAppear {
-                renderer = Renderer(metalView: metalView, totalPoints: totalPoints, showGrid: showGrid, modifier: modifier, color: color.toFloat4())
+                renderer = Renderer(metalView: metalView)
             }
             .onChange(of: totalPoints) { _, newValue in
                 renderer?.updateTotalPoints(newValue)
             }
-            .onChange(of: showGrid) { _, newValue in
-                renderer?.updateShowGrid(newValue)
+            .onChange(of: rightJoystickPosition) { _, newValue in
+                renderer?.updateRightJoystickPosition(newValue, view: metalView)
+            }
+            .onChange(of: leftJoystickPosition) { _, newValue in
+                renderer?.updateLeftJoystickPosition(newValue, view: metalView)
             }
             .onChange(of: modifier) { _, newValue in
                 renderer?.updateModifier(newValue)

@@ -12,13 +12,22 @@ class Renderer: NSObject {
     static var commandQueue: MTLCommandQueue!
     static var library: MTLLibrary!
     
+    private var lastFrameTime: CFTimeInterval = 0
+    private var frameCount: Int = 0
+    
     var mesh: MTKMesh!
     var pointPipelineState: MTLRenderPipelineState!
     var trianglePipelineState: MTLRenderPipelineState!
     var meshPipelineState: MTLRenderPipelineState!
     var timer: Float = 0
     var total_points: UInt32 = 50
-    var showGrid: Bool = true
+    
+    // controls
+    var cameraPosition: CGPoint = .zero
+    var cameraAngle: CGPoint = .zero
+    var leftJoystick: CGPoint = .zero
+    var rightJoystick: CGPoint = .zero
+    
     var modifier: CubeModifier = CubeModifier()
     var trainUniforms = Uniforms()
     var quadUniforms = Uniforms()
@@ -35,11 +44,7 @@ class Renderer: NSObject {
     }()
     
     
-    init(metalView: MTKView, totalPoints: UInt32, showGrid: Bool, modifier: CubeModifier, color: simd_float4) {
-        self.total_points = totalPoints
-        self.showGrid = showGrid
-        self.modifier = modifier
-
+    init(metalView: MTKView) {
         guard
             let device = MTLCreateSystemDefaultDevice(),
             let commandQueue = device.makeCommandQueue() else {
@@ -109,8 +114,12 @@ class Renderer: NSObject {
         self.total_points = totalPoints
     }
 
-    func updateShowGrid(_ showGrid: Bool) {
-        self.showGrid = showGrid
+    func updateLeftJoystickPosition(_ joystickPosition: CGPoint, view: MTKView) {
+        self.leftJoystick = joystickPosition
+    }
+    
+    func updateRightJoystickPosition(_ joystickPosition: CGPoint, view: MTKView) {
+        self.rightJoystick = joystickPosition
     }
 
     func updateModifier(_ modifier: CubeModifier) {
@@ -128,11 +137,32 @@ extension Renderer: MTKViewDelegate {
         drawableSizeWillChange size: CGSize
     ) {
         let aspect = Float(view.bounds.width) / Float(view.bounds.height)
-        let projectionMatrix = float4x4(
-            projectionFov: Float(45).degreesToRadians,
-            near: 0.1,
-            far: 100,
-            aspect: aspect)
+        let projectionMatrix = float4x4(projectionFov: Float(45).degreesToRadians, near: 0.1, far: 100, aspect: aspect)
+
+        trainUniforms.projectionMatrix = projectionMatrix
+        quadUniforms.projectionMatrix = projectionMatrix
+    }
+    
+    func updateProjecionMatrix(view: MTKView, deltaTime: TimeInterval) {
+        cameraPosition.x += leftJoystick.x * deltaTime
+        cameraPosition.y += leftJoystick.y * deltaTime
+        
+        cameraAngle.x += rightJoystick.x * deltaTime
+        cameraAngle.y += rightJoystick.y * deltaTime
+
+        let aspect = Float(view.bounds.width) / Float(view.bounds.height)
+        var projectionMatrix = float4x4(projectionFov: Float(45).degreesToRadians, near: 0.1, far: 100, aspect: aspect)
+
+        // left-handed coordinate system
+        // We change the X and Z coordinates to move the camera
+        let cameraTranslation = float4x4(translation: float3(Float(cameraPosition.x), 0, Float(cameraPosition.y))).inverse
+        let cameraRotation = float4x4(rotation: float3(Float(-cameraAngle.y), Float(cameraAngle.x), 0)).inverse
+        
+
+        // the camera is rotated around the origin
+        // TODO: change the rotation to be around the camera position
+        projectionMatrix *= cameraTranslation * cameraRotation  // * scale
+
         trainUniforms.projectionMatrix = projectionMatrix
         quadUniforms.projectionMatrix = projectionMatrix
     }
@@ -149,6 +179,13 @@ extension Renderer: MTKViewDelegate {
             return
         }
 
+        let currentTime = CACurrentMediaTime()
+        if lastFrameTime > 0 {
+            let deltaTime = currentTime - lastFrameTime
+            updateProjecionMatrix(view: view, deltaTime: deltaTime)
+        }
+        lastFrameTime = currentTime
+        
         timer += 0.01
         
         // When possible, use indexed rendering. With indexed rendering, you pass less data to the GPU
