@@ -5,8 +5,8 @@ MetalSandBox is a Metal-based application designed as a learning platform for Me
 
 ## Demo's Features
 
-- Render points and triangles using Metal shaders.
-- Adjustable number of points.
+- Render a 3D rocket model, a low-poly house and a 1x1 box
+- The scene is rotating on the Y-axis by matrix transformations.
 - Toggleable grid display.
 
 ## Project Structure
@@ -14,33 +14,41 @@ MetalSandBox is a Metal-based application designed as a learning platform for Me
 - `ContentView.swift`: The main view of the application, containing the UI elements.
 - `MetalView.swift`: A SwiftUI view that integrates with Metal to render graphics.
 - `Renderer.swift`: The Metal renderer class that handles rendering points and triangles.
-- `Shaders.metal`: The Metal shader functions used for rendering.
+- `Fragment.metal`: The Metal fragment shader that renders the points and triangles.
+- `Vertex.metal`: The Metal vertex shader that processes the vertices of the points and triangles.
 - And more...
 
-## Point's Shader
+## The Fragment Shader
 
 ```metal
-vertex VertexOut point_vertex_main(
-                                   constant uint &count [[buffer(12)]],
-                                   constant float &timer [[buffer(11)]],
-                                   uint vertexID [[vertex_id]])
+fragment float4 fragment_main(
+                              constant Params &params [[buffer(ParamsBuffer)]],
+                              texture2d<float> baseColorTexture [[texture(BaseColor)]],
+                              VertexOut in [[stage_in]])
 {
-    float radius = 0.8;
-    float pi = 3.14159;
-    float current = float(vertexID) / float(count);
-    float2 position;
-    position.x = radius * cos(2 * pi * current + timer);
-    position.y = radius * sin(2 * pi * current + timer);
-    VertexOut out {
-        .position = float4(position, 0, 1),
-        .color = float4(1, 0, 0, 1),
-        .pointSize = 20
-    };
-    return out;
+    constexpr sampler textureSampler(filter::linear, address::repeat, mip_filter::linear, max_anisotropy(8));
+    float3 baseColor = baseColorTexture.sample(textureSampler, in.uv * params.tiling).rgb;
+    return float4(baseColor, 1);
 }
 ```
 
 ## Screenshots
+
+### Here view from the left of the scene
+
+![Screenshot](Screenshots/preview6.png)
+
+Same view, in wireframe mode, showing the culled triangles, optimized by the Metal API.
+![Screenshot](Screenshots/preview8.png)
+
+### Here view from the right of the scene
+
+![Screenshot](Screenshots/preview5.png)
+Again, the same view, in wireframe mode, showing the culled triangles, optimized by the Metal API.
+
+![Screenshot](Screenshots/preview7.png)
+
+Screenshot from the iPhone app, an older version
 
 ![Screenshot](Screenshots/preview4.jpeg)
 
