@@ -75,10 +75,10 @@
 		DDCB23862D500E1900C6DFB1 = {
 			isa = PBXGroup;
 			children = (
+				DD05336C2D88A4AC006A5216 /* MultiTests */,
 				DDCB23A32D500E1A00C6DFB1 /* MultiTestsTests */,
 				DDCB23AD2D500E1A00C6DFB1 /* MultiTestsUITests */,
 				DDCB23902D500E1900C6DFB1 /* Products */,
-				DD05336C2D88A4AC006A5216 /* MultiTests */,
 			);
 			sourceTree = "<group>";
 		};

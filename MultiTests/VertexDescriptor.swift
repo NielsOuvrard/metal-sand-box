@@ -17,9 +17,46 @@ extension MDLVertexDescriptor {
     static var defaultLayout: MDLVertexDescriptor {
         let vertexDescriptor = MDLVertexDescriptor()
         var offset = 0
-        vertexDescriptor.attributes[0] = MDLVertexAttribute(name: MDLVertexAttributePosition, format: .float3, offset: 0, bufferIndex: 0)
+        vertexDescriptor.attributes[Position.index] = MDLVertexAttribute(
+            name: MDLVertexAttributePosition,
+            format: .float3,
+            offset: 0,
+            bufferIndex: VertexBuffer.index)
         offset += MemoryLayout<float3>.stride
-        vertexDescriptor.layouts[0] = MDLVertexBufferLayout(stride: offset)
+        
+        vertexDescriptor.attributes[Normal.index] = MDLVertexAttribute(
+            name: MDLVertexAttributeNormal,
+            format: .float3,
+            offset: offset,
+            bufferIndex: VertexBuffer.index)
+        offset += MemoryLayout<float3>.stride
+        vertexDescriptor.layouts[VertexBuffer.index] = MDLVertexBufferLayout(stride: offset)
+        
+        vertexDescriptor.attributes[UV.index] = MDLVertexAttribute(
+            name: MDLVertexAttributeTextureCoordinate,
+            format: .float2,
+            offset: 0,
+            bufferIndex: UVBuffer.index)
+        vertexDescriptor.layouts[UVBuffer.index] = MDLVertexBufferLayout(stride: MemoryLayout<float2>.stride)
+        
         return vertexDescriptor
+    }
+}
+
+extension Attributes {
+    var index: Int {
+        return Int(self.rawValue)
+    }
+}
+
+extension BufferIndices {
+    var index: Int {
+        return Int(self.rawValue)
+    }
+}
+
+extension TextureIndices {
+    var index: Int {
+        return Int(self.rawValue)
     }
 }

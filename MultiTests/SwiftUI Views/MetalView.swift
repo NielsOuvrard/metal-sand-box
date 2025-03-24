@@ -21,10 +21,8 @@ struct MetalView: View {
     @State private var metalView = MTKView()
     @State private var renderer: Renderer?
     
-    @Binding var totalPoints: UInt32
     @Binding var rightJoystickPosition: CGPoint
     @Binding var leftJoystickPosition: CGPoint
-    @Binding var modifier: CubeModifier
     @Binding var color: Color
     
     var body: some View {
@@ -32,17 +30,11 @@ struct MetalView: View {
             .onAppear {
                 renderer = Renderer(metalView: metalView)
             }
-            .onChange(of: totalPoints) { _, newValue in
-                renderer?.updateTotalPoints(newValue)
-            }
             .onChange(of: rightJoystickPosition) { _, newValue in
                 renderer?.updateRightJoystickPosition(newValue, view: metalView)
             }
             .onChange(of: leftJoystickPosition) { _, newValue in
                 renderer?.updateLeftJoystickPosition(newValue, view: metalView)
-            }
-            .onChange(of: modifier) { _, newValue in
-                renderer?.updateModifier(newValue)
             }
             .onChange(of: color) { _, newValue in
                 renderer?.updateColor(newValue.toFloat4())

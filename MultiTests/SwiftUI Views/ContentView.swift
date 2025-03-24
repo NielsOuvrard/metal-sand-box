@@ -23,7 +23,7 @@ struct CubeModifier: Equatable {
 }
 
 struct ContentView: View {
-    @State private var showGrid = true
+    @State private var showGrid = false
     @State private var totalPoints: UInt32 = 50
     @State private var selectedColor = Color.red
     @State private var modifier: CubeModifier = .init()
@@ -35,10 +35,8 @@ struct ContentView: View {
     var body: some View {
         VStack(alignment: .leading) {
             ZStack {
-                MetalView(totalPoints: $totalPoints,
-                          rightJoystickPosition: $rightJoystickPosition,
+                MetalView(rightJoystickPosition: $rightJoystickPosition,
                           leftJoystickPosition: $leftJoystickPosition,
-                          modifier: $modifier,
                           color: $selectedColor)
                     .border(Color.black, width: 2)
                 if showGrid {
@@ -50,34 +48,15 @@ struct ContentView: View {
 
 
             ScrollView {
-                Toggle("Show Grid", isOn: $showGrid)
+                Toggle("Grid", isOn: $showGrid)
+                Toggle("Wierframe", isOn: $showGrid)
+                Toggle("Pause", isOn: $showGrid)
                 
-                Text("Total Points: \(totalPoints)")
+                Text("Angle: \(totalPoints)")
                 Slider(value: Binding(
                     get: { Double(totalPoints) },
                     set: { totalPoints = UInt32($0) }
                 ), in: 1...100, step: 1)
-                
-                Text("AngleX: \(modifier.angleX)")
-                Toggle("Rotate X", isOn: $modifier.rotateX)
-                Slider(value: Binding(
-                    get: { Double(modifier.angleX) },
-                    set: { modifier.angleX = Float($0) }
-                ), in: -180...180, step: 1)
-                
-                Text("AngleY: \(modifier.angleY)")
-                Toggle("Rotate Y", isOn: $modifier.rotateY)
-                Slider(value: Binding(
-                    get: { Double(modifier.angleY) },
-                    set: { modifier.angleY = Float($0) }
-                ), in: -180...180, step: 1)
-                
-                Text("AngleZ: \(modifier.angleZ)")
-                Toggle("Rotate Z", isOn: $modifier.rotateZ)
-                Slider(value: Binding(
-                    get: { Double(modifier.angleZ) },
-                    set: { modifier.angleZ = Float($0) }
-                ), in: -180...180, step: 1)
                 
                 ColorPicker("Square Color", selection: $selectedColor)
                 
@@ -124,26 +103,6 @@ struct ContentView: View {
             print("Left Thumbstick - X: \(xValue), Y: \(yValue)")
             // Use xValue and yValue to update your state or perform actions
         }
-    }
-}
-
-struct Key: View {
-    var body: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                Rectangle()
-                    .foregroundColor(originalColor)
-                    .frame(width: 20, height: 20)
-                Text("Original triangle")
-            }
-            HStack {
-                Rectangle()
-                    .foregroundColor(.red)
-                    .frame(width: 20, height: 20)
-                Text("Transformed triangle")
-            }
-        }
-        .padding(0)
     }
 }
 
