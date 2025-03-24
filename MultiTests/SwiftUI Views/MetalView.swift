@@ -23,6 +23,9 @@ struct MetalView: View {
     
     @Binding var rightJoystickPosition: CGPoint
     @Binding var leftJoystickPosition: CGPoint
+    @Binding var vertexCullingOn: Bool
+    @Binding var wierframeOn: Bool
+    @Binding var sceneMoving: Bool
     @Binding var color: Color
     
     var body: some View {
@@ -37,7 +40,22 @@ struct MetalView: View {
                 renderer?.updateLeftJoystickPosition(newValue, view: metalView)
             }
             .onChange(of: color) { _, newValue in
-                renderer?.updateColor(newValue.toFloat4())
+                let float4Color = newValue.toFloat4()
+                metalView.clearColor = MTLClearColor(
+                    red: Double(float4Color.x),
+                    green: Double(float4Color.y),
+                    blue: Double(float4Color.z),
+                    alpha: Double(float4Color.w)
+                )
+            }
+            .onChange(of: vertexCullingOn) { _, newValue in
+                renderer?.updateVertexCulling(newValue)
+            }
+            .onChange(of: wierframeOn) { _, newValue in
+                renderer?.updateWierframe(newValue)
+            }
+            .onChange(of: sceneMoving) { _, newValue in
+                renderer?.updateSceneMoving(newValue)
             }
     }
 }

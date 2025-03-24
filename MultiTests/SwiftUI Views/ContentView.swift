@@ -13,20 +13,12 @@ import GameController
 let originalColor = Color(red: 0.8, green: 0.8, blue: 0.8)
 let size: CGFloat = 400
 
-struct CubeModifier: Equatable {
-    var rotateX: Bool = true
-    var rotateY: Bool = true
-    var rotateZ: Bool = true
-    var angleX: Float = 0
-    var angleY: Float = 0
-    var angleZ: Float = 0
-}
-
 struct ContentView: View {
     @State private var showGrid = false
-    @State private var totalPoints: UInt32 = 50
+    @State private var vertexCullingOn = true
+    @State private var wierframeOn = false
+    @State private var sceneMoving = true
     @State private var selectedColor = Color.red
-    @State private var modifier: CubeModifier = .init()
     
     @State private var leftJoystickPosition: CGPoint = .zero
     @State private var rightJoystickPosition: CGPoint = .zero
@@ -37,6 +29,9 @@ struct ContentView: View {
             ZStack {
                 MetalView(rightJoystickPosition: $rightJoystickPosition,
                           leftJoystickPosition: $leftJoystickPosition,
+                          vertexCullingOn: $vertexCullingOn,
+                          wierframeOn: $wierframeOn,
+                          sceneMoving: $sceneMoving,
                           color: $selectedColor)
                     .border(Color.black, width: 2)
                 if showGrid {
@@ -49,14 +44,9 @@ struct ContentView: View {
 
             ScrollView {
                 Toggle("Grid", isOn: $showGrid)
-                Toggle("Wierframe", isOn: $showGrid)
-                Toggle("Pause", isOn: $showGrid)
-                
-                Text("Angle: \(totalPoints)")
-                Slider(value: Binding(
-                    get: { Double(totalPoints) },
-                    set: { totalPoints = UInt32($0) }
-                ), in: 1...100, step: 1)
+                Toggle("Vertex Culling", isOn: $vertexCullingOn)
+                Toggle("Wierframe", isOn: $wierframeOn)
+                Toggle("Pause", isOn: $sceneMoving)
                 
                 ColorPicker("Square Color", selection: $selectedColor)
                 

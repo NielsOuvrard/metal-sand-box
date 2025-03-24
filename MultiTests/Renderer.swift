@@ -16,6 +16,10 @@ class Renderer: NSObject {
     let depthStencilState: MTLDepthStencilState?
 
     var timer: Float = 0
+    var vertexCullingOn: Bool = true
+    var wierframeOn: Bool = false
+    var sceneMoving: Bool = true
+    var sceneAngle: Float = 0
     var uniforms = Uniforms()
     var params = Params()
     
@@ -88,8 +92,8 @@ class Renderer: NSObject {
         depthStencilState = Renderer.buildDepthStencilState()
         super.init()
         
-        //metalView.clearColor = MTLClearColor(red: 0.3, green: 0.6, blue: 1, alpha: 1.0)
-        metalView.clearColor = MTLClearColor(red: 1, green: 1, blue: 1, alpha: 1.0)
+        metalView.clearColor = MTLClearColor(red: 0.3, green: 0.6, blue: 1, alpha: 1.0)
+        //metalView.clearColor = MTLClearColor(red: 1, green: 1, blue: 1, alpha: 1.0)
         metalView.depthStencilPixelFormat = .depth32Float
         metalView.delegate = self
         mtkView(metalView, drawableSizeWillChange: metalView.drawableSize)
@@ -109,9 +113,17 @@ class Renderer: NSObject {
     func updateRightJoystickPosition(_ joystickPosition: CGPoint, view: MTKView) {
         self.rightJoystick = joystickPosition
     }
-
-    func updateColor(_ color: simd_float4) {
-        //box.updateColors(color.xyz)
+    
+    func updateVertexCulling(_ vertexCullingOn: Bool) {
+        self.vertexCullingOn = vertexCullingOn
+    }
+    
+    func updateWierframe(_ wierframe: Bool) {
+        self.wierframeOn = wierframe
+    }
+    
+    func updateSceneMoving(_ sceneMoving: Bool) {
+        self.sceneMoving = sceneMoving
     }
 }
 
@@ -121,7 +133,7 @@ extension Renderer: MTKViewDelegate {
         drawableSizeWillChange size: CGSize
     ) {
         let aspect = Float(view.bounds.width) / Float(view.bounds.height)
-        let projectionMatrix = float4x4(projectionFov: Float(70).degreesToRadians, near: 0.1, far: 100, aspect: aspect)
+        let projectionMatrix = float4x4(projectionFov: Float(90).degreesToRadians, near: 0.1, far: 100, aspect: aspect)
         uniforms.projectionMatrix = projectionMatrix
         
         params.width = UInt32(size.width)
@@ -157,10 +169,15 @@ extension Renderer: MTKViewDelegate {
             return
         }
 
-        //renderEncoder.setTriangleFillMode(.lines)
+        if wierframeOn {
+            renderEncoder.setTriangleFillMode(.lines)
+        }
         timer += 0.005
         uniforms.viewMatrix = float4x4(translation: [0, 1.4, -4.0]).inverse
-        uniforms.viewMatrix *= float4x4(rotation: float3(0, Float(sin(timer)), 0)).inverse
+        if sceneMoving {
+            sceneAngle += 0.005
+        }
+        uniforms.viewMatrix *= float4x4(rotation: float3(0, Float(sin(sceneAngle)), 0)).inverse
         
         renderEncoder.setDepthStencilState(depthStencilState)
         renderEncoder.setRenderPipelineState(pipelineState)
@@ -172,10 +189,12 @@ extension Renderer: MTKViewDelegate {
         // You can pass any data in an MTLBuffer to the GPU using setVertexBuffer(_:offset:index:)
         // If the data is less than 4KB -> pass a structure using setVertexBytes(_:length:index:)
         renderEncoder.setVertexBytes(&timer, length: MemoryLayout<Float>.stride, index: 11)
-        
+
+        if vertexCullingOn {
+            renderEncoder.setCullMode(.front)
+            renderEncoder.setFrontFacing(.counterClockwise)
+        }
         // Box
-        renderEncoder.setCullMode(.front)
-        renderEncoder.setFrontFacing(.counterClockwise)
         box.rotation.x = sin(timer)
         box.rotation.z = cos(timer)
         box.render(encoder: renderEncoder, uniforms: uniforms, params: params)
@@ -192,10 +211,8 @@ extension Renderer: MTKViewDelegate {
         rocket.render(encoder: renderEncoder, uniforms: uniforms, params: params)
         
         // Ground
-        renderEncoder.setCullMode(.back)
-        // renderEncoder.setCullMode(.front)
-        // renderEncoder.setFrontFacing(.clockwise)
         ground.scale = 40
+        ground.rotation.x = π
         ground.rotation.z = Float(90).degreesToRadians
         ground.render(encoder: renderEncoder, uniforms: uniforms, params: params)
         
