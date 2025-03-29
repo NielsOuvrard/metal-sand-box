@@ -21,41 +21,10 @@ struct MetalView: View {
     @State private var metalView = MTKView()
     @State private var renderer: Renderer?
     
-    @Binding var rightJoystickPosition: CGPoint
-    @Binding var leftJoystickPosition: CGPoint
-    @Binding var vertexCullingOn: Bool
-    @Binding var wierframeOn: Bool
-    @Binding var sceneMoving: Bool
-    @Binding var color: Color
-    
     var body: some View {
         MetalViewRepresentable(metalView: $metalView)
             .onAppear {
                 renderer = Renderer(metalView: metalView)
-            }
-            .onChange(of: rightJoystickPosition) { _, newValue in
-                renderer?.updateRightJoystickPosition(newValue, view: metalView)
-            }
-            .onChange(of: leftJoystickPosition) { _, newValue in
-                renderer?.updateLeftJoystickPosition(newValue, view: metalView)
-            }
-            .onChange(of: color) { _, newValue in
-                let float4Color = newValue.toFloat4()
-                metalView.clearColor = MTLClearColor(
-                    red: Double(float4Color.x),
-                    green: Double(float4Color.y),
-                    blue: Double(float4Color.z),
-                    alpha: Double(float4Color.w)
-                )
-            }
-            .onChange(of: vertexCullingOn) { _, newValue in
-                renderer?.updateVertexCulling(newValue)
-            }
-            .onChange(of: wierframeOn) { _, newValue in
-                renderer?.updateWierframe(newValue)
-            }
-            .onChange(of: sceneMoving) { _, newValue in
-                renderer?.updateSceneMoving(newValue)
             }
     }
 }

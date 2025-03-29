@@ -21,26 +21,18 @@ extension Model {
         
         uniforms.modelMatrix = transform.modelMatrix
         
-        encoder.setVertexBytes(
-            &uniforms,
-            length: MemoryLayout<Uniforms>.stride,
-            index: UniformsBuffer.index)
+        // You can pass any data in an MTLBuffer to the GPU using setVertexBuffer(_:offset:index:)
+        // If the data is less than 4KB -> pass a structure using setVertexBytes(_:length:index:)
+        encoder.setVertexBytes(&uniforms, length: MemoryLayout<Uniforms>.stride, index: UniformsBuffer.index)
         
-        encoder.setFragmentBytes(
-            &params,
-            length: MemoryLayout<Params>.stride,
-            index: ParamsBuffer.index)
+        encoder.setFragmentBytes(&params, length: MemoryLayout<Params>.stride, index: ParamsBuffer.index)
         
         for mesh in meshes {
             for (index, vertexBuffer) in mesh.vertexBuffers.enumerated() {
-                encoder.setVertexBuffer(
-                    vertexBuffer,
-                    offset: 0,
-                    index: index)
+                encoder.setVertexBuffer(vertexBuffer, offset: 0, index: index)
             }
             
             for submesh in mesh.submeshes {
-                
                 encoder.setFragmentTexture(submesh.textures.baseColor, index: BaseColor.index)
                 
                 encoder.drawIndexedPrimitives(

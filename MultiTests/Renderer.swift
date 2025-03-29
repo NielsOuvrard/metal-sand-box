@@ -15,46 +15,12 @@ class Renderer: NSObject {
     var pipelineState: MTLRenderPipelineState!
     let depthStencilState: MTLDepthStencilState?
 
-    var timer: Float = 0
-    var vertexCullingOn: Bool = true
-    var wierframeOn: Bool = false
-    var sceneMoving: Bool = true
-    var sceneAngle: Float = 0
+    
+    lazy var scene = GameScene()
+    
+    var lastTime: Double = CFAbsoluteTimeGetCurrent()
     var uniforms = Uniforms()
     var params = Params()
-    
-    // controls
-    var cameraPosition: CGPoint = .zero
-    var cameraAngle: CGPoint = .zero
-    var leftJoystick: CGPoint = .zero
-    var rightJoystick: CGPoint = .zero
-    
-    // the models to render
-    lazy var box: Model = { // lazy = initialized only when it's first used
-        var box = Model(name: "box", primitiveType: .box) // Quad(device: Self.device, scale: 0.8)
-        //box.updateColors([1, 0, 0])
-        box.position.x = 2.8
-        box.position.y = 1
-        box.position.z = 0
-        box.setTexture(name: "steel", type: BaseColor)
-        return box
-    }()
-    
-    lazy var rocket: Model = {
-        Model(name: "rocket.usdz")
-    }()
-    
-    lazy var house: Model = {
-        Model(name: "lowpoly-house.usdz")
-    }()
-    
-    lazy var ground: Model = {
-        let ground = Model(name: "ground", primitiveType: .plane)
-        ground.setTexture(name: "grass", type: BaseColor)
-        ground.tiling = 16
-        return ground
-    }()
-    
     
     init(metalView: MTKView) {
         guard
@@ -74,10 +40,6 @@ class Renderer: NSObject {
         let fragmentFunction = library?.makeFunction(name: "fragment_main")
         
         // create the pipeline state object
-        
-        // Creating pipeline states is relatively time-consuming
-        // which is why you do it up-front
-        // but switching pipeline states during frames is fast and efficient
         let pipelineDescriptor = MTLRenderPipelineDescriptor()
         pipelineDescriptor.vertexFunction = vertexFunction
         pipelineDescriptor.fragmentFunction = fragmentFunction
@@ -105,26 +67,6 @@ class Renderer: NSObject {
         descriptor.isDepthWriteEnabled = true
         return Renderer.device.makeDepthStencilState(descriptor: descriptor)
     }
-
-    func updateLeftJoystickPosition(_ joystickPosition: CGPoint, view: MTKView) {
-        self.leftJoystick = joystickPosition
-    }
-    
-    func updateRightJoystickPosition(_ joystickPosition: CGPoint, view: MTKView) {
-        self.rightJoystick = joystickPosition
-    }
-    
-    func updateVertexCulling(_ vertexCullingOn: Bool) {
-        self.vertexCullingOn = vertexCullingOn
-    }
-    
-    func updateWierframe(_ wierframe: Bool) {
-        self.wierframeOn = wierframe
-    }
-    
-    func updateSceneMoving(_ sceneMoving: Bool) {
-        self.sceneMoving = sceneMoving
-    }
 }
 
 extension Renderer: MTKViewDelegate {
@@ -132,34 +74,9 @@ extension Renderer: MTKViewDelegate {
         _ view: MTKView,
         drawableSizeWillChange size: CGSize
     ) {
-        let aspect = Float(view.bounds.width) / Float(view.bounds.height)
-        let projectionMatrix = float4x4(projectionFov: Float(90).degreesToRadians, near: 0.1, far: 100, aspect: aspect)
-        uniforms.projectionMatrix = projectionMatrix
-        
-        params.width = UInt32(size.width)
-        params.height = UInt32(size.height)
+        scene.update(size: size)
     }
-    
-    func updateProjecionMatrix(deltaTime: TimeInterval) {
-        cameraPosition.x += leftJoystick.x * deltaTime
-        cameraPosition.y += leftJoystick.y * deltaTime
-        
-        cameraAngle.x += rightJoystick.x * deltaTime
-        cameraAngle.y += rightJoystick.y * deltaTime
 
-        // left-handed coordinate system
-        // We change the X and Z coordinates to move the camera
-        let cameraTranslation = float4x4(translation: float3(Float(cameraPosition.x), 0, Float(cameraPosition.y))).inverse
-        let cameraRotation = float4x4(rotation: float3(Float(cameraAngle.y), Float(cameraAngle.x), 0)).inverse
-        
-
-        // the camera is rotated around the origin
-        // TODO: change the rotation to be around the camera position
-        // projectionMatrix *= cameraTranslation
-
-        uniforms.viewMatrix = cameraTranslation * cameraRotation
-    }
-    
     func draw(in view: MTKView) {
         guard
             let commandBuffer = Self.commandQueue.makeCommandBuffer(),
@@ -168,54 +85,24 @@ extension Renderer: MTKViewDelegate {
         else {
             return
         }
-
-        if wierframeOn {
-            renderEncoder.setTriangleFillMode(.lines)
-        }
-        timer += 0.005
-        uniforms.viewMatrix = float4x4(translation: [0, 1.4, -4.0]).inverse
-        if sceneMoving {
-            sceneAngle += 0.005
-        }
-        uniforms.viewMatrix *= float4x4(rotation: float3(0, Float(sin(sceneAngle)), 0)).inverse
-        
         renderEncoder.setDepthStencilState(depthStencilState)
         renderEncoder.setRenderPipelineState(pipelineState)
         
-        
-        // When possible, use indexed rendering. With indexed rendering, you pass less data to the GPU
-        // memory bandwidth is a major bottleneck
-        
-        // You can pass any data in an MTLBuffer to the GPU using setVertexBuffer(_:offset:index:)
-        // If the data is less than 4KB -> pass a structure using setVertexBytes(_:length:index:)
-        renderEncoder.setVertexBytes(&timer, length: MemoryLayout<Float>.stride, index: 11)
+        let currentTime = CFAbsoluteTimeGetCurrent()
+        let deltaTime = Float(currentTime - lastTime)
+        lastTime = currentTime
+        scene.update(deltaTime: deltaTime)
 
-        if vertexCullingOn {
-            renderEncoder.setCullMode(.front)
-            renderEncoder.setFrontFacing(.counterClockwise)
+
+        renderEncoder.setCullMode(.front)
+        renderEncoder.setFrontFacing(.counterClockwise)
+        
+        uniforms.viewMatrix = scene.camera.viewMatrix
+        uniforms.projectionMatrix = scene.camera.projectionMatrix
+        for model in scene.models {
+            model.render(encoder: renderEncoder, uniforms: uniforms, params: params)
         }
-        // Box
-        box.rotation.x = sin(timer)
-        box.rotation.z = cos(timer)
-        box.render(encoder: renderEncoder, uniforms: uniforms, params: params)
-        
-        // House
-        house.render(encoder: renderEncoder, uniforms: uniforms, params: params)
 
-        // Rocket
-        rocket.position.x = -3
-        rocket.position.y = 0.5
-        rocket.rotation.z = -0.6
-        rocket.rotation.x = cos(timer)
-        rocket.scale = 0.1
-        rocket.render(encoder: renderEncoder, uniforms: uniforms, params: params)
-        
-        // Ground
-        ground.scale = 40
-        ground.rotation.x = π
-        ground.rotation.z = Float(90).degreesToRadians
-        ground.render(encoder: renderEncoder, uniforms: uniforms, params: params)
-        
         renderEncoder.endEncoding()
         guard let drawable = view.currentDrawable else {
             return
