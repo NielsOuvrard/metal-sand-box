@@ -18,8 +18,8 @@ extension Model {
         var uniforms = vertex
         var params = fragment
         params.tiling = tiling
-        
         uniforms.modelMatrix = transform.modelMatrix
+        uniforms.normalMatrix = uniforms.modelMatrix.upperLeft
         
         // You can pass any data in an MTLBuffer to the GPU using setVertexBuffer(_:offset:index:)
         // If the data is less than 4KB -> pass a structure using setVertexBytes(_:length:index:)

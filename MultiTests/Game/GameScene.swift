@@ -47,8 +47,8 @@ struct GameScene {
     }()
 
     lazy var models: [Model] = [ground, house, box, rocket]
-    
     var camera = PlayerCamera()
+    let lighting = SceneLighting()    
     
     init() {
         camera.position = [0, 1.4, -4.0]
