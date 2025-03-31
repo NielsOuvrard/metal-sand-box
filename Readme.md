@@ -9,37 +9,25 @@ MetalSandBox is a Metal-based application designed as a learning platform for Me
 - The scene is rotating on the Y-axis by matrix transformations.
 - Toggleable grid display.
 
-## Project Structure
-
-- `ContentView.swift`: The main view of the application, containing the UI elements.
-- `MetalView.swift`: A SwiftUI view that integrates with Metal to render graphics.
-- `Renderer.swift`: The Metal renderer class that handles rendering points and triangles.
-- `Fragment.metal`: The Metal fragment shader that renders the points and triangles.
-- `Vertex.metal`: The Metal vertex shader that processes the vertices of the points and triangles.
-- And more...
-
-## The Fragment Shader
-
-```metal
-fragment float4 fragment_main(
-                              constant Params &params [[buffer(ParamsBuffer)]],
-                              texture2d<float> baseColorTexture [[texture(BaseColor)]],
-                              VertexOut in [[stage_in]])
-{
-    constexpr sampler textureSampler(filter::linear, address::repeat, mip_filter::linear, max_anisotropy(8));
-    float3 baseColor = baseColorTexture.sample(textureSampler, in.uv * params.tiling).rgb;
-    return float4(baseColor, 1);
-}
-```
 
 ## Screenshots
 
 ### Here view from the left of the scene
+Some lighting added to the scene.
+
+![Screenshot](Screenshots/preview10.png)
+
+Here we can see a sun, a point light (red), and a spotlight (blue).
+
+![Screenshot](Screenshots/preview9.png)
+
+
+### Show the scene in wireframe mode, with the culling of triangles (Before lighting works)
 
 ![Screenshot](Screenshots/preview6.png)
 
-Same view, in wireframe mode, showing the culled triangles, optimized by the Metal API.
 ![Screenshot](Screenshots/preview8.png)
+Same view, in wireframe mode, showing the culled triangles, optimized by the Metal API.
 
 ### Here view from the right of the scene
 
@@ -48,7 +36,11 @@ Again, the same view, in wireframe mode, showing the culled triangles, optimized
 
 ![Screenshot](Screenshots/preview7.png)
 
-Screenshot from the iPhone app, an older version
+### Same but iPhone version
+
+![Screenshot](Screenshots/preview11.png)
+
+### Older versions
 
 ![Screenshot](Screenshots/preview4.jpeg)
 
@@ -60,3 +52,48 @@ It is rotated around the bottom-left corner.
 ![Screenshot](Screenshots/preview3.png)
 
 The train is a mesh took from a USDZ file, at the back a square and some points, which the shader is above.
+
+
+## Project Structure
+
+```sh
+MultiTests
+├── MultiTests.entitlements
+├── MultiTestsApp.swift
+├── Game
+│   ├── Camera.swift
+│   ├── GameScene.swift
+│   ├── Renderer.swift
+│   ├── Rendering.swift
+│   └── SceneLightning.swift
+├── Geometry
+│   ├── Mesh.swift
+│   ├── Model.swift
+│   ├── Primitive.swift
+│   ├── Submesh.swift
+│   ├── Transform.swift
+│   └── VertexDescriptor.swift
+├── Input
+│   ├── InputController.swift
+│   └── Movement.swift
+├── Models
+│   └── * Some usdz files
+├── Shaders
+│   ├── Common.h
+│   ├── Fragment.metal
+│   ├── Lighting.h
+│   ├── Lighting.metal
+│   ├── ShaderDefs.h
+│   └── Vertex.metal
+├── SwiftUI Views
+│   ├── ContentView.swift
+│   └── MetalView.swift
+├── Textures
+│   ├── TextureController.swift
+│   └── Textures.xcassets
+│       ├── Contents.json
+│       ├── grass.textureset
+│       └── steel.textureset
+└── Utility
+    └── MathLibrary.swift
+```
