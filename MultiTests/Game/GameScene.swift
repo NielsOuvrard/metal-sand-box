@@ -54,8 +54,13 @@ struct GameScene {
         camera.position = [0, 1.4, -4.0]
     }
     
-    mutating func update(deltaTime: Float) {
+    mutating func update(deltaTime: Float, shoots: inout [LineVertex]) { // inout = can modify the value of a parameter
         camera.update(deltaTime: deltaTime)
+        let input = InputController.shared
+        
+        if input.buttonsPressed.contains(.buttonA) {
+            shoots.append(LineVertex(positionStart: camera.position, positionEnd: camera.position + camera.forwardVector))
+        }
     }
     
     mutating func update(size: CGSize) {

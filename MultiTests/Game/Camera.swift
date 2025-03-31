@@ -150,6 +150,14 @@ struct PlayerCamera: Camera, Movement {
     var aspect: Float = 1.0
     var fov = Float(70).degreesToRadians
     
+    var forwardVector: float3 {
+        normalize([
+            sin(rotation.y) * cos(rotation.x), // X component
+            sin(rotation.x),                  // Y component (pitch)
+            cos(rotation.y) * cos(rotation.x) // Z component
+        ])
+    }
+
     var viewMatrix: float4x4 {
         let rotateMatrix = float4x4(rotationYXZ: [-rotation.x, rotation.y, 0])
         return (float4x4(translation: position) * rotateMatrix).inverse

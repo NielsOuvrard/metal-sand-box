@@ -8,39 +8,6 @@
 import MetalKit
 
 
-class MetalViewController: UIViewController {
-    var metalView: MTKView!
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        // Setup Metal view
-        metalView = MTKView(frame: view.bounds)
-        metalView.device = MTLCreateSystemDefaultDevice()
-        view.addSubview(metalView)
-        
-        // Hide home indicator
-        setupHomeIndicator()
-    }
-    
-    private func setupHomeIndicator() {
-        if #available(iOS 11.0, *) {
-            // This makes the home indicator auto-hide after a few seconds
-            self.setNeedsUpdateOfHomeIndicatorAutoHidden()
-        }
-    }
-    
-    // Required for hiding home indicator
-    override var prefersHomeIndicatorAutoHidden: Bool {
-        return true
-    }
-    
-    // Optional: Control edge protection
-    override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
-        return .bottom
-    }
-}
-
 class Renderer: NSObject {
     static var device: MTLDevice!
     static var commandQueue: MTLCommandQueue!
@@ -55,6 +22,7 @@ class Renderer: NSObject {
     var lastTime: Double = CFAbsoluteTimeGetCurrent()
     var uniforms = Uniforms()
     var params = Params()
+    var shoots: [LineVertex] = []
     
     init(metalView: MTKView) {
         guard
@@ -125,7 +93,7 @@ extension Renderer: MTKViewDelegate {
         let currentTime = CFAbsoluteTimeGetCurrent()
         let deltaTime = Float(currentTime - lastTime)
         lastTime = currentTime
-        scene.update(deltaTime: deltaTime)
+        scene.update(deltaTime: deltaTime, shoots: &shoots)
 
 
         renderEncoder.setCullMode(.front)
@@ -142,6 +110,8 @@ extension Renderer: MTKViewDelegate {
         for model in scene.models {
             model.render(encoder: renderEncoder, uniforms: uniforms, params: params)
         }
+        
+        Shoot.draw(shoots: shoots, encoder: renderEncoder, uniforms: uniforms)
 
         renderEncoder.endEncoding()
         guard let drawable = view.currentDrawable else {
