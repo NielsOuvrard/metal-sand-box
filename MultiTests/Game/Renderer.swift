@@ -7,6 +7,40 @@
 
 import MetalKit
 
+
+class MetalViewController: UIViewController {
+    var metalView: MTKView!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        // Setup Metal view
+        metalView = MTKView(frame: view.bounds)
+        metalView.device = MTLCreateSystemDefaultDevice()
+        view.addSubview(metalView)
+        
+        // Hide home indicator
+        setupHomeIndicator()
+    }
+    
+    private func setupHomeIndicator() {
+        if #available(iOS 11.0, *) {
+            // This makes the home indicator auto-hide after a few seconds
+            self.setNeedsUpdateOfHomeIndicatorAutoHidden()
+        }
+    }
+    
+    // Required for hiding home indicator
+    override var prefersHomeIndicatorAutoHidden: Bool {
+        return true
+    }
+    
+    // Optional: Control edge protection
+    override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
+        return .bottom
+    }
+}
+
 class Renderer: NSObject {
     static var device: MTLDevice!
     static var commandQueue: MTLCommandQueue!

@@ -30,6 +30,9 @@ class InputController {
     
     var leftJoystickPosition: CGPoint = .zero
     var rightJoystickPosition: CGPoint = .zero
+#if os(iOS)
+    var virtualController: GCVirtualController?
+#endif
     
     var leftMouseDown = false
     var mouseDelta = Point.zero
@@ -74,8 +77,38 @@ class InputController {
         
         // controller handling
         setupControllerListener(center: center)
+        
+#if os(iOS)
+        setupVirtualController()
+#endif
     }
-    
+
+#if os(iOS)
+    func setupVirtualController() {
+        // Create a virtual controller configuration
+        let controllerConfiguration = GCVirtualController.Configuration()
+        controllerConfiguration.elements = [
+            GCInputLeftThumbstick,
+            GCInputRightThumbstick,
+            GCInputButtonA,
+            GCInputButtonB,
+            GCInputButtonX,
+            GCInputButtonY
+        ]
+        
+        // Create the virtual controller
+        virtualController = GCVirtualController(configuration: controllerConfiguration)
+        
+        // Connect the virtual controller
+        virtualController?.connect { error in
+            if let error = error {
+                print("Error connecting virtual controller: \(error.localizedDescription)")
+            } else {
+                print("Virtual controller connected successfully")
+            }
+        }
+    }
+#endif
     func setupControllerListener(center: NotificationCenter) {
         center.addObserver(
             forName: .GCControllerDidConnect,

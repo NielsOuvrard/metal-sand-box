@@ -9,17 +9,10 @@
 import SwiftUI
 import MetalKit
 
-
-extension Color {
-    func toFloat4() -> simd_float4 {
-        let components = self.cgColor?.components ?? [0, 0, 0, 1]
-        return simd_float4(Float(components[0]), Float(components[1]), Float(components[2]), Float(components[3]))
-    }
-}
-
 struct MetalView: View {
     @State private var metalView = MTKView()
     @State private var renderer: Renderer?
+    
     
     var body: some View {
         MetalViewRepresentable(metalView: $metalView)
